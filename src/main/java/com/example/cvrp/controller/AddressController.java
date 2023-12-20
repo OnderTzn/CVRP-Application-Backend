@@ -1,8 +1,10 @@
 package com.example.cvrp.controller;
 
 import com.example.cvrp.model.Address;
+import com.example.cvrp.model.GoogleMapsResponse;
 import com.example.cvrp.repository.AddressRepository;
 import com.example.cvrp.service.AddressServiceImp;
+import com.example.cvrp.service.DistanceServiceImp;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ public class AddressController {
 
     private final AddressServiceImp addressServiceImp;
     private final AddressRepository addressRepository;
+    private final DistanceServiceImp distanceService;
 
     @GetMapping("/all")
     public ResponseEntity<List<Address>> getAllAddresses() {
@@ -53,4 +56,13 @@ public class AddressController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @GetMapping("/calculateDistance")
+    public ResponseEntity<GoogleMapsResponse> calculateDistance() {
+        GoogleMapsResponse distanceData = distanceService.getDistanceAndTimeForAddresses();
+        if (distanceData != null) {
+            return new ResponseEntity<>(distanceData, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

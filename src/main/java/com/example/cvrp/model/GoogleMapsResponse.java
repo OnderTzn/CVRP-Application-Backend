@@ -1,14 +1,17 @@
 package com.example.cvrp.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GoogleMapsResponse {
-    // Assuming a simplified structure for example purposes
+
     private List<Row> rows;
 
-    // Standard getters and setters
+    //Getters and setters
     public List<Row> getRows() {
         return rows;
     }
@@ -21,7 +24,7 @@ public class GoogleMapsResponse {
     public static class Row {
         private List<Element> elements;
 
-        // Standard getters and setters
+        //Getters and setters
         public List<Element> getElements() {
             return elements;
         }
@@ -35,7 +38,7 @@ public class GoogleMapsResponse {
         private Distance distance;
         private Duration duration;
 
-        // Standard getters and setters
+        //Getters and setters
         public Distance getDistance() {
             return distance;
         }
@@ -53,17 +56,17 @@ public class GoogleMapsResponse {
         }
     }
 
+    @Getter
+    @Setter
     public static class Distance {
         private String text;
         private long value;
-
-        // Standard getters and setters
     }
 
+    @Getter
+    @Setter
     public static class Duration {
         private String text;
         private long value;
-
-        // Standard getters and setters
     }
 }

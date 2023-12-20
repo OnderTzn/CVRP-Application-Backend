@@ -18,26 +18,22 @@ public class Address implements Serializable {
     private Long id;
 
     @Column
-    private double longitude;
-
-    @Column
     private double latitude;
 
+    @Column
+    private double longitude;
 
     public void updateAddress(Address address) {
-        this.longitude = address.longitude;
         this.latitude = address.latitude;
+        this.longitude = address.longitude;
     }
 
 
     public String toString() {
         return "Address{" +
                 "id=" + id +
-                ", longitude=" + longitude +
                 ", latitude=" + latitude +
+                ", longitude=" + longitude +
                 '}';
     }
-
-
-
 }

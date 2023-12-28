@@ -1,5 +1,6 @@
 package com.example.cvrp.controller;
 
+import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.GoogleMapsResponse;
 import com.example.cvrp.repository.AddressRepository;
@@ -56,6 +57,13 @@ public class AddressController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @GetMapping("/calculateDistance/{addressLimit}")
+    public ResponseEntity<List<RouteLeg>> calculateDistance(@PathVariable int addressLimit) {
+        List<RouteLeg> route = distanceService.calculateOptimalRoute(addressLimit);
+        return ResponseEntity.ok(route);
+    }
+
+    /*
     @GetMapping("/calculateDistance")
     public ResponseEntity<GoogleMapsResponse> calculateDistance() {
         GoogleMapsResponse distanceData = distanceService.getDistanceAndTimeForAddresses();
@@ -65,4 +73,5 @@ public class AddressController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    */
 }

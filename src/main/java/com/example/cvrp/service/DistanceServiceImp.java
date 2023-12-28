@@ -61,7 +61,12 @@ public class DistanceServiceImp {
             if (time < shortestTime || (time.equals(shortestTime) && distance < shortestDistance)) {
                 shortestTime = time;
                 shortestDistance = distance;
-                optimalLeg = new RouteLeg(destination.getId(), time, distance);
+                optimalLeg = new RouteLeg(
+                        destination.getId(),
+                        destination.getLatitude(),
+                        destination.getLongitude(),
+                        time,
+                        distance);
             }
         }
 

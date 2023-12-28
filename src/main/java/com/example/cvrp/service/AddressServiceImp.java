@@ -5,6 +5,8 @@ import com.example.cvrp.model.Address;
 import com.example.cvrp.repository.AddressRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -45,5 +47,10 @@ public class AddressServiceImp implements AddressService {
     //Find all addresses
     public List<Address> findAllAddresses(){
         return addressRepository.findAll();
+    }
+
+    public List<Address> findAllAddresses(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return addressRepository.findAll(pageable).getContent();
     }
 }

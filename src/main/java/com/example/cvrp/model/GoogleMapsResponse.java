@@ -60,13 +60,13 @@ public class GoogleMapsResponse {
     @Setter
     public static class Distance {
         private String text;
-        private long value;
+        private Double value;
     }
 
     @Getter
     @Setter
     public static class Duration {
         private String text;
-        private long value;
+        private Double value;
     }
 }

@@ -32,8 +32,8 @@ public class DistanceServiceImp {
     }
 
 
-    public List<RouteLeg> calculateOptimalRoute() {
-        List<Address> allAddresses = addressService.findAllAddresses();
+    public List<RouteLeg> calculateOptimalRoute(int addressLimit) {
+        List<Address> allAddresses = addressService.findAllAddresses(addressLimit);
         List<RouteLeg> route = new ArrayList<>();
         Address origin = allAddresses.remove(0); // Starting point
 
@@ -49,8 +49,35 @@ public class DistanceServiceImp {
 
     private RouteLeg findOptimalDestination(Address origin, List<Address> potentialDestinations) {
         RouteLeg optimalLeg = null;
-        // Logic to compare destinations and find the optimal one
-        // Use GoogleMapsService here to get time and distance
+        Double shortestTime = Double.MAX_VALUE;
+        Double shortestDistance = Double.MAX_VALUE;
+
+        for (Address destination : potentialDestinations) {
+            // Skip if destination is the same as origin
+            if (destination.getId().equals(origin.getId())) {
+                continue;
+            }
+
+            // Prepare the parameters for the Google Maps API request
+            String originParam = origin.getLatitude() + "," + origin.getLongitude();
+            String destinationParam = destination.getLatitude() + "," + destination.getLongitude();
+
+            // Call Google Maps API via GoogleMapsService
+            GoogleMapsResponse response = googleMapsService.getDistanceMatrix(originParam, destinationParam);
+
+            // Extract time and distance from the response
+            // Assume response structure matches your GoogleMapsResponse class
+            Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
+            Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
+
+            // Determine if this destination is the new optimal destination
+            if (time < shortestTime || (time.equals(shortestTime) && distance < shortestDistance)) {
+                shortestTime = time;
+                shortestDistance = distance;
+                optimalLeg = new RouteLeg(destination.getId(), time, distance);
+            }
+        }
+
         return optimalLeg;
     }
 

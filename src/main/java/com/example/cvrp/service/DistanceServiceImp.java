@@ -23,6 +23,7 @@ public class DistanceServiceImp {
         List<Address> allAddresses = new ArrayList<>(addressService.findAllAddresses(addressLimit));
         List<RouteLeg> route = new ArrayList<>();
         Address origin = allAddresses.remove(0); // Starting point
+        route.add(new RouteLeg(origin.getId(), origin.getLatitude(), origin.getLongitude(), 0.0, 0.0)); //Starting point is added to the route array.
 
         while (!allAddresses.isEmpty()) {
             RouteLeg optimalLeg = findOptimalDestination(origin, new ArrayList<>(allAddresses));

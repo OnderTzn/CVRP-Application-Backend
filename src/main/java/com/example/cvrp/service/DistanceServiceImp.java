@@ -19,19 +19,6 @@ public class DistanceServiceImp {
         this.addressService = addressService;
     }
 
-    public GoogleMapsResponse getDistanceAndTimeForAddresses() {
-        List<Address> addresses = addressService.findAllAddresses();
-        // Convert the list of addresses into a string format expected by Google Maps API
-        // For example: "lat1,lon1|lat2,lon2|lat3,lon3"
-        String origins = "52.5235445,13.4193129"; // Starting point
-        String destinations = "52.5194301,13.3960675" /*addresses.stream()
-                .map(a -> a.getLatitude() + "," + a.getLongitude())
-                .collect(Collectors.joining("|"))*/;
-
-        return googleMapsService.getDistanceMatrix(origins, destinations);
-    }
-
-
     public List<RouteLeg> calculateOptimalRoute(int addressLimit) {
         List<Address> allAddresses = addressService.findAllAddresses(addressLimit);
         List<RouteLeg> route = new ArrayList<>();

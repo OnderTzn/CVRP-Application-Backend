@@ -20,7 +20,7 @@ public class DistanceServiceImp {
     }
 
     public List<RouteLeg> calculateOptimalRoute(int addressLimit) {
-        List<Address> allAddresses = addressService.findAllAddresses(addressLimit);
+        List<Address> allAddresses = new ArrayList<>(addressService.findAllAddresses(addressLimit));
         List<RouteLeg> route = new ArrayList<>();
         Address origin = allAddresses.remove(0); // Starting point
 

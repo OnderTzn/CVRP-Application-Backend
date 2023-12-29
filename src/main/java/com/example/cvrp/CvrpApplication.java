@@ -27,7 +27,7 @@ public class CvrpApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(CvrpApplication.class, args);
-/*
+		/*
 		String csvFilePath = "C:\\Users\\Önder\\Documents\\Germany-Berlin.csv";
 		String apiUrl = "http://localhost:8080/address/add"; // Replace with your API URL
 
@@ -35,20 +35,22 @@ public class CvrpApplication {
 			for (CSVRecord record : parser) {
 				String lat = record.get("LAT");
 				String lon = record.get("LON");
+				String unit = record.get("UNIT"); // Retrieve the size value
 
-				sendPostRequest(apiUrl, lat, lon);
+				sendPostRequest(apiUrl, lat, lon, unit); // Include size in the POST request
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-*/
+		 */
 	}
 /*
-	private static void sendPostRequest(String apiUrl, String lat, String lon) {
+	private static void sendPostRequest(String apiUrl, String lat, String lon, String unit) {
 		try (CloseableHttpClient client = HttpClients.createDefault()) {
 			HttpPost httpPost = new HttpPost(apiUrl);
 
-			String json = "{\"latitude\": \"" + lat + "\", \"longitude\": \"" + lon + "\"}";
+			// Include the size in the JSON payload
+			String json = String.format("{\"latitude\": \"%s\", \"longitude\": \"%s\", \"unit\": \"%s\"}", lat, lon, unit);
 			StringEntity entity = new StringEntity(json);
 			httpPost.setEntity(entity);
 			httpPost.setHeader("Accept", "application/json");
@@ -60,5 +62,7 @@ public class CvrpApplication {
 			e.printStackTrace();
 		}
 	}
-*/
+
+ */
+
 }

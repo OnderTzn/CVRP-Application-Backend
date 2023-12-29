@@ -23,6 +23,9 @@ public class Address implements Serializable {
     @Column
     private double longitude;
 
+    @Column
+    private Long unit;
+
     public void updateAddress(Address address) {
         this.latitude = address.latitude;
         this.longitude = address.longitude;
@@ -34,6 +37,7 @@ public class Address implements Serializable {
                 "id=" + id +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
+                ", unit=" + unit +
                 '}';
     }
 }

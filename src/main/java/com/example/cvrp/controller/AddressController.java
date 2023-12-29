@@ -57,11 +57,12 @@ public class AddressController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @GetMapping("/calculateDistance/{addressLimit}")
-    public ResponseEntity<List<RouteLeg>> calculateDistance(@PathVariable int addressLimit) {
-        List<RouteLeg> route = distanceService.calculateOptimalRoute(addressLimit);
+    @GetMapping("/calculateDistance/{addressLimit}/{vehicleCapacity}")
+    public ResponseEntity<List<RouteLeg>> calculateDistance(@PathVariable int addressLimit, @PathVariable int vehicleCapacity) {
+        List<RouteLeg> route = distanceService.calculateOptimalRoute(addressLimit, vehicleCapacity);
         return ResponseEntity.ok(route);
     }
+
 
     /*
     @GetMapping("/calculateDistance")

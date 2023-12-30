@@ -63,15 +63,4 @@ public class AddressController {
         return ResponseEntity.ok(route);
     }
 
-    /*
-    @GetMapping("/calculateDistance")
-    public ResponseEntity<GoogleMapsResponse> calculateDistance() {
-        GoogleMapsResponse distanceData = distanceService.getDistanceAndTimeForAddresses();
-        if (distanceData != null) {
-            return new ResponseEntity<>(distanceData, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-    */
 }

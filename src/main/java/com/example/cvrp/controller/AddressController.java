@@ -2,9 +2,9 @@ package com.example.cvrp.controller;
 
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
-import com.example.cvrp.model.GoogleMapsResponse;
 import com.example.cvrp.repository.AddressRepository;
 import com.example.cvrp.service.AddressServiceImp;
+import com.example.cvrp.algorithms.CustomRoutingAlgorithm;
 import com.example.cvrp.service.DistanceServiceImp;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,7 +20,6 @@ import java.util.List;
 public class AddressController {
 
     private final AddressServiceImp addressServiceImp;
-    private final AddressRepository addressRepository;
     private final DistanceServiceImp distanceService;
 
     @GetMapping("/all")
@@ -57,9 +56,22 @@ public class AddressController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    /*
     @GetMapping("/calculateDistance/{addressLimit}/{vehicleCapacity}")
     public ResponseEntity<List<RouteLeg>> calculateDistance(@PathVariable int addressLimit, @PathVariable Long vehicleCapacity) {
         List<RouteLeg> route = distanceService.calculateOptimalRoute(addressLimit, vehicleCapacity);
+        return ResponseEntity.ok(route);
+    }*/
+
+    @GetMapping("/calculateRoute/{algorithmType}/{addressLimit}/{vehicleCapacity}")
+    public ResponseEntity<List<RouteLeg>> calculateRoute(
+            @PathVariable String algorithmType,
+            @PathVariable int addressLimit,
+            @PathVariable Long vehicleCapacity) {
+
+        // Validate algorithmType here...
+
+        List<RouteLeg> route = distanceService.calculateRouteUsingAlgorithm(algorithmType, addressLimit, vehicleCapacity);
         return ResponseEntity.ok(route);
     }
 

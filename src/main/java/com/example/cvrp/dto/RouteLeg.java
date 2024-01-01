@@ -4,9 +4,12 @@ import lombok.Data;
 
 @Data
 public class RouteLeg {
+    private Long originId;
     private Long destinationId;
     private Double latitude;
     private Double longitude;
+    private Double destLatitude;
+    private Double destLongitude;
     private Double time;
     private Double distance;
 
@@ -18,9 +21,12 @@ public class RouteLeg {
         this.distance = distance;
     }
 
-    public RouteLeg(Long destinationId, Double latitude, Double longitude) {
+    public RouteLeg(Long originId, Long destinationId, Double destLatitude, Double destLongitude, Double time, Double distance) {
+        this.originId = originId;
         this.destinationId = destinationId;
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.destLatitude = destLatitude;
+        this.destLongitude = destLongitude;
+        this.time = time;
+        this.distance = distance;
     }
 }

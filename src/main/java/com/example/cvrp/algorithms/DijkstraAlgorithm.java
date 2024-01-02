@@ -26,6 +26,12 @@ public class DijkstraAlgorithm implements RoutingAlgorithm{
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
+        // Print the received addresses
+        System.out.println("Received addresses:");
+        for (Address address : addresses) {
+            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
+        }
+
         // Initialize variables
         PriorityQueue<Node> priorityQueue = new PriorityQueue<>();
         Map<Long, TimeDistance> shortestTimeToAddress = new HashMap<>();

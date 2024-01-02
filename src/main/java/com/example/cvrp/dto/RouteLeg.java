@@ -21,6 +21,12 @@ public class RouteLeg {
         this.distance = distance;
     }
 
+    public RouteLeg(Long id, double latitude, double longitude) {
+        this.destinationId = id;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
     public RouteLeg(Long originId, Long destinationId, Double destLatitude, Double destLongitude, Double time, Double distance) {
         this.originId = originId;
         this.destinationId = destinationId;

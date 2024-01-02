@@ -5,50 +5,65 @@ import com.example.cvrp.model.Address;
 import com.example.cvrp.model.GoogleMapsResponse;
 import com.example.cvrp.service.AddressService;
 import com.example.cvrp.service.GoogleMapsServiceImp;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CustomRoutingAlgorithm implements RoutingAlgorithm {
+
     private final GoogleMapsServiceImp googleMapsService;
 
     public CustomRoutingAlgorithm(GoogleMapsServiceImp googleMapsService) {
         this.googleMapsService = googleMapsService;
     }
 
-    @Override
-    public List<RouteLeg> calculateRoute(List<Address> allAddresses, Long vehicleCapacity) {
+    public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
+        // Print the received addresses
+        System.out.println("Received addresses:");
+        for (Address address : addresses) {
+            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
+        }
+
+        List<Address> tempAddresses = new ArrayList<>(addresses);
         List<RouteLeg> route = new ArrayList<>();
-        Address depot = allAddresses.get(0);   // Assuming the first address is the depot
+        Address depot = tempAddresses.get(0);   // Store the starting point
+
+        // Add the depot as the starting point in the route
+        route.add(new RouteLeg(depot.getId(), depot.getLatitude(), depot.getLongitude()));
+
         Long currentCapacity = vehicleCapacity;
         Address origin = depot;
 
-        allAddresses.remove(depot); // Remove depot from allAddresses
+        // Remove depot from allAddresses to avoid considering it as a next stop
+        tempAddresses.remove(depot);
 
-        while (!allAddresses.isEmpty()) {
-            Address nextAddress = findFeasibleDestinationWithCapacity(origin, allAddresses, currentCapacity);
+        while (!tempAddresses.isEmpty()) {
+            Address nextAddress = findFeasibleDestinationWithCapacity(origin, tempAddresses, currentCapacity);
+
             if (nextAddress == null) {
+                // Return to depot if no feasible destination is found
                 RouteLeg legToDepot = createRouteLegToDepot(origin, depot);
                 route.add(legToDepot);
                 origin = depot;
                 currentCapacity = vehicleCapacity;
                 continue;
             }
+
+            // Visit the next address
             RouteLeg leg = createRouteLeg(origin, nextAddress);
             route.add(leg);
             currentCapacity -= nextAddress.getUnit();
-            allAddresses.remove(nextAddress);
+            tempAddresses.remove(nextAddress);
             origin = nextAddress;
         }
 
+        // Return to depot at the end of the route
         if (!origin.equals(depot)) {
             route.add(createRouteLegToDepot(origin, depot));
         }
 
         return route;
     }
-
 
     private Address findFeasibleDestinationWithCapacity(Address origin, List<Address> potentialDestinations, Long currentCapacity) {
         Address optimalDestination = null;
@@ -109,10 +124,6 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
         return extractTimeAndDistance(origin, nextAddress);
     }
 
-
-
-
-    /*
     private RouteLeg findOptimalDestination(Address origin, List<Address> potentialDestinations) {
         RouteLeg optimalLeg = null;
         Double shortestTime = Double.MAX_VALUE;
@@ -152,9 +163,4 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
         return optimalLeg;
     }
 
-
-    private Address getAddressById(Long id, List<Address> addresses) {
-        // Method to find an Address object by ID from a list of addresses
-        return addresses.stream().filter(a -> a.getId().equals(id)).findFirst().orElse(null);
-    }*/
 }

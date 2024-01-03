@@ -57,14 +57,6 @@ public class AddressController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    /*
-    @GetMapping("/calculateDistance/{addressLimit}/{vehicleCapacity}")
-    public ResponseEntity<List<RouteLeg>> calculateDistance(@PathVariable int addressLimit, @PathVariable Long vehicleCapacity) {
-        List<RouteLeg> route = distanceService.calculateOptimalRoute(addressLimit, vehicleCapacity);
-        return ResponseEntity.ok(route);
-    }
-    */
-
     @GetMapping("/calculateRoute/{algorithmType}/{addressLimit}/{vehicleCapacity}")
     public ResponseEntity<List<RouteLeg>> calculateRoute(
             @PathVariable String algorithmType,

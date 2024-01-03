@@ -26,7 +26,7 @@ public class DistanceServiceImp {
 
         routingAlgorithms = new HashMap<>();
         routingAlgorithms.put("Custom", new CustomRoutingAlgorithm(googleMapsService));
-        routingAlgorithms.put("Dijkstra", new DijkstraAlgorithm(googleMapsService, addressService.findAllAddresses()));
+        routingAlgorithms.put("Dijkstra", new DijkstraAlgorithm(googleMapsService));
     }
 
     public List<RouteLeg> calculateOptimalRoute(String algorithmType, int addressLimit, Long vehicleCapacity) {

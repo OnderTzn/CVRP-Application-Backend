@@ -3,6 +3,7 @@ package com.example.cvrp.service;
 import com.example.cvrp.algorithms.CustomRoutingAlgorithm;
 import com.example.cvrp.algorithms.DijkstraAlgorithm;
 import com.example.cvrp.algorithms.RoutingAlgorithm;
+import com.example.cvrp.algorithms.SimulatedAnnealingAlgorithm;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.GoogleMapsResponse;
@@ -27,6 +28,7 @@ public class DistanceServiceImp {
         routingAlgorithms = new HashMap<>();
         routingAlgorithms.put("Custom", new CustomRoutingAlgorithm(googleMapsService));
         routingAlgorithms.put("Dijkstra", new DijkstraAlgorithm(googleMapsService));
+        routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
     }
 
     public List<RouteLeg> calculateOptimalRoute(String algorithmType, int addressLimit, Long vehicleCapacity) {

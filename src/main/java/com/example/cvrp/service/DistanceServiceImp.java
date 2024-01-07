@@ -1,19 +1,13 @@
 package com.example.cvrp.service;
 
-import com.example.cvrp.algorithms.CustomRoutingAlgorithm;
-import com.example.cvrp.algorithms.DijkstraAlgorithm;
-import com.example.cvrp.algorithms.RoutingAlgorithm;
-import com.example.cvrp.algorithms.SimulatedAnnealingAlgorithm;
+import com.example.cvrp.algorithms.*;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
-import com.example.cvrp.model.GoogleMapsResponse;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class DistanceServiceImp {
@@ -26,9 +20,10 @@ public class DistanceServiceImp {
         this.addressService = addressService;
 
         routingAlgorithms = new HashMap<>();
-        routingAlgorithms.put("Custom", new CustomRoutingAlgorithm(googleMapsService));
-        routingAlgorithms.put("Dijkstra", new DijkstraAlgorithm(googleMapsService));
+        routingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
+        //routingAlgorithms.put("Dijkstra", new DijkstraAlgorithm(googleMapsService));
         routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
+        routingAlgorithms.put("Savings", new SavingsAlgorithm(googleMapsService));
     }
 
     public List<RouteLeg> calculateOptimalRoute(String algorithmType, int addressLimit, Long vehicleCapacity) {

@@ -3,17 +3,16 @@ package com.example.cvrp.algorithms;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.GoogleMapsResponse;
-import com.example.cvrp.service.AddressService;
 import com.example.cvrp.service.GoogleMapsServiceImp;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CustomRoutingAlgorithm implements RoutingAlgorithm {
+public class NearestNeighborAlgorithm implements RoutingAlgorithm {
 
     private final GoogleMapsServiceImp googleMapsService;
 
-    public CustomRoutingAlgorithm(GoogleMapsServiceImp googleMapsService) {
+    public NearestNeighborAlgorithm(GoogleMapsServiceImp googleMapsService) {
         this.googleMapsService = googleMapsService;
     }
 
@@ -27,15 +26,10 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
         List<Address> tempAddresses = new ArrayList<>(addresses);
         List<RouteLeg> route = new ArrayList<>();
         Address depot = tempAddresses.get(0);   // Store the starting point
-
-        // Add the depot as the starting point in the route
-        route.add(new RouteLeg(depot.getId(), depot.getLatitude(), depot.getLongitude()));
+        tempAddresses.remove(depot);
 
         Long currentCapacity = vehicleCapacity;
         Address origin = depot;
-
-        // Remove depot from allAddresses to avoid considering it as a next stop
-        tempAddresses.remove(depot);
 
         while (!tempAddresses.isEmpty()) {
             Address nextAddress = findFeasibleDestinationWithCapacity(origin, tempAddresses, currentCapacity);
@@ -61,6 +55,11 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
         if (!origin.equals(depot)) {
             route.add(createRouteLegToDepot(origin, depot));
         }
+        System.out.println("Complete Route Legs:");
+        for (RouteLeg leg : route) {
+            System.out.println("Leg from ID: " + leg.getOriginId() + " to ID: " + leg.getDestinationId() +
+                    ", Time: " + leg.getTime() + "s, Distance: " + leg.getDistance() + "m");
+        }
 
         return route;
     }
@@ -69,21 +68,28 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
         Address optimalDestination = null;
         Double shortestTime = Double.MAX_VALUE;
         Double shortestDistance = Double.MAX_VALUE;
-
+        int i=1;
         for (Address destination : potentialDestinations) {
             if (!destination.equals(origin) && destination.getUnit() <= currentCapacity) {
                 GoogleMapsResponse response = getGoogleMapsResponse(origin, destination);
-                Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
-                Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
+                if (response != null && response.getRows() != null && !response.getRows().isEmpty()) {
+                    Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
+                    Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
 
-                if (time < shortestTime || (time.equals(shortestTime) && distance < shortestDistance)) {
-                    shortestTime = time;
-                    shortestDistance = distance;
-                    optimalDestination = destination;
+
+                    // Debug print
+                    System.out.println(i + ") Origin ID: " + origin.getId() + ", Destination ID: " + destination.getId() +
+                            ", Time: " + time + "s, Distance: " + distance + "m");
+
+                    i++;
+                    if (time < shortestTime || (time.equals(shortestTime) && distance < shortestDistance)) {
+                        shortestTime = time;
+                        shortestDistance = distance;
+                        optimalDestination = destination;
+                    }
                 }
             }
         }
-
         return optimalDestination;
     }
 
@@ -112,7 +118,10 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
         Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
         Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
 
-        return new RouteLeg(destination.getId(), destination.getLatitude(), destination.getLongitude(), time, distance);
+        return new RouteLeg(origin.getId(), destination.getId(),
+                origin.getLatitude(), origin.getLongitude(),
+                destination.getLatitude(), destination.getLongitude(),
+                time, distance);
     }
 
 
@@ -152,6 +161,7 @@ public class CustomRoutingAlgorithm implements RoutingAlgorithm {
                 shortestTime = time;
                 shortestDistance = distance;
                 optimalLeg = new RouteLeg(
+                        origin.getId(),
                         destination.getId(),
                         destination.getLatitude(),
                         destination.getLongitude(),

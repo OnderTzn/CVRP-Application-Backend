@@ -21,7 +21,7 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        System.out.println("Received addresses from SA:");
+        System.out.println("Received addresses from Savings Algorithm:");
         for (Address address : addresses) {
             System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
         }
@@ -39,7 +39,7 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         mergeRoutes(savingsQueue, routes);
 
         // Convert the list of addresses in routes to RouteLegs
-        return convertToRouteLegs(routes, depot);
+        return convertToRouteLegs(routes, vehicleCapacity);
     }
 
     private List<List<Address>> initializeRoutes(List<Address> addresses) {
@@ -91,26 +91,37 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
     }
 
 
-    private List<RouteLeg> convertToRouteLegs(List<List<Address>> routes, Address depot) {
+    private List<RouteLeg> convertToRouteLegs(List<List<Address>> routes, Long vehicleCapacity) {
         List<RouteLeg> routeLegs = new ArrayList<>();
+        Long currentCapacity = vehicleCapacity;
+        Address depot = routes.get(0).get(0); // Assuming the depot is the first address of the first route
+
         for (List<Address> route : routes) {
             for (int i = 0; i < route.size() - 1; i++) {
                 Address from = route.get(i);
                 Address to = route.get(i + 1);
-                System.out.println("The route addresses:");
 
-                System.out.println("from ID: " + from.getId() + ", Latitude: " + from.getLatitude() + ", Longitude: " + from.getLongitude());
-                System.out.println("to ID: " + to.getId() + ", Latitude: " + to.getLatitude() + ", Longitude: " + to.getLongitude());
-
-
-                TimeDistance timeDistance = getTravelTime(from, to);
-                RouteLeg leg = new RouteLeg(from.getId(), to.getId(),
-                        from.getLatitude(), from.getLongitude(),
-                        to.getLatitude(), to.getLongitude(),
-                        timeDistance.getTime(), timeDistance.getDistance());
-                routeLegs.add(leg);
+                if (to.getUnit() > currentCapacity) {
+                    // Add leg back to depot
+                    routeLegs.add(createRouteLegBetweenAddresses(from, depot));
+                    // Reset capacity
+                    currentCapacity = vehicleCapacity;
+                    // Add leg from depot to 'to'
+                    routeLegs.add(createRouteLegBetweenAddresses(depot, to));
+                } else {
+                    // Add leg from 'from' to 'to'
+                    routeLegs.add(createRouteLegBetweenAddresses(from, to));
+                }
+                currentCapacity -= to.getUnit();
             }
         }
+        /* Maybe redundant, current capacity is always => 0 and depot has 0 demand
+        // Make sure the last leg returns to the depot if not already there
+        Long lastDestinationId = routeLegs.get(routeLegs.size() - 1).getDestinationId();
+        Address lastAddress = findAddressById(lastDestinationId, addresses);
+        if (lastDestinationId != null && !lastDestinationId.equals(depot.getId())) {
+            routeLegs.add(createRouteLegBetweenAddresses(depot, depot));
+        }*/
 
         // Print the routeLegs before returning
         System.out.println("Complete Route Legs:");
@@ -121,6 +132,15 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
         return routeLegs;
     }
+
+    private RouteLeg createRouteLegBetweenAddresses(Address from, Address to) {
+        TimeDistance timeDistance = getTravelTime(from, to);
+        return new RouteLeg(from.getId(), to.getId(),
+                from.getLatitude(), from.getLongitude(),
+                to.getLatitude(), to.getLongitude(),
+                timeDistance.getTime(), timeDistance.getDistance());
+    }
+
 
 
     // Helper Methods
@@ -167,12 +187,19 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         // Append route2 to route1
         route1.addAll(route2);
 
-        // Add the depot back to the end of the merged route
-        /////////route1.add(route2.get(route2.size() - 1));
-
         // Remove the merged route2 from the list of all routes
         allRoutes.remove(route2);
     }
+
+    private Address findAddressById(Long id, List<Address> addresses) {
+        for (Address address : addresses) {
+            if (address.getId().equals(id)) {
+                return address;
+            }
+        }
+        return null; // Handle this case appropriately
+    }
+
 
 
 }

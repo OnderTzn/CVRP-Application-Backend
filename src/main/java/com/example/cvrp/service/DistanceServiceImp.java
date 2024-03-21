@@ -21,7 +21,6 @@ public class DistanceServiceImp {
 
         routingAlgorithms = new HashMap<>();
         routingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
-        //routingAlgorithms.put("Dijkstra", new DijkstraAlgorithm(googleMapsService));
         routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
         routingAlgorithms.put("Savings", new SavingsAlgorithm(googleMapsService));
     }

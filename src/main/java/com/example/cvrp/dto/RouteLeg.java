@@ -1,5 +1,6 @@
 package com.example.cvrp.dto;
 
+import com.example.cvrp.model.Address;
 import lombok.Data;
 
 @Data
@@ -12,6 +13,7 @@ public class RouteLeg {
     private Double destLongitude;
     private Double time;
     private Double distance;
+    private Long vehicleCapacity;
 
     public RouteLeg(Long destinationId, Double latitude, Double longitude, Double time, Double distance) {
         this.destinationId = destinationId;
@@ -45,6 +47,14 @@ public class RouteLeg {
         this.longitude = longitude;
         this.time = time;
         this.distance = distance;
+    }
+
+    public RouteLeg(Long originId, Long destinationId, Double distance, Double time, Long vehicleCapacity) {
+        this.originId = originId;
+        this.destinationId = destinationId;
+        this.distance = distance;
+        this.time = time;
+        this.vehicleCapacity = vehicleCapacity;
     }
 
 }

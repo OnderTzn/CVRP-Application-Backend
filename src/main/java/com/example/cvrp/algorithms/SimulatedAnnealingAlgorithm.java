@@ -3,130 +3,303 @@ package com.example.cvrp.algorithms;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.GoogleMapsResponse;
+import com.example.cvrp.model.TimeDistance;
 import com.example.cvrp.service.GoogleMapsServiceImp;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
+    // Define MAX_ATTEMPTS as a constant
+    //private static final int MAX_ATTEMPTS = 150;
+
 
     private final GoogleMapsServiceImp googleMapsService;
-    private double temperature;
-    private double coolingRate;
-    private final Random random = new Random();
+    private Map<String, TimeDistance> distanceCache = new HashMap<>();
+    private double temperature = 10000;
+    private double coolingRate = 0.99;
+    private boolean allAddressesVisited = false;
+    private int googleMapsRequestCount = 0;
 
-    public SimulatedAnnealingAlgorithm(GoogleMapsServiceImp googleMapsService, double initialTemp, double coolingRate) {
+    public SimulatedAnnealingAlgorithm(GoogleMapsServiceImp googleMapsService) {
         this.googleMapsService = googleMapsService;
-        this.temperature = initialTemp;
-        this.coolingRate = coolingRate;
     }
 
-    @Override
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        List<Address> currentRoute = createInitialRoute(addresses, vehicleCapacity);
-        List<Address> bestRoute = new ArrayList<>(currentRoute);
+        List<Address> currentSolution = generateInitialSolution(addresses);
+        List<Address> bestSolution = new ArrayList<>(currentSolution);
+        Address depot = findDepot(addresses);
+        System.out.println("Received addresses from SA:");
+        for (Address address : addresses) {
+            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
+        }
 
         while (temperature > 1) {
-            List<Address> newRoute = generateNeighbor(currentRoute, vehicleCapacity);
-            double currentEnergy = calculateCost(currentRoute);
-            double neighborEnergy = calculateCost(newRoute);
+            System.out.println("TEMPERATURE: " + temperature);
+            List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
+
+            // Adjust the solution for capacity constraints
+            refillIfNecessary(newSolution, vehicleCapacity);
+
+            double currentEnergy = calculateObjectiveValue(currentSolution);
+            double neighborEnergy = calculateObjectiveValue(newSolution);
 
             if (acceptanceProbability(currentEnergy, neighborEnergy, temperature) > Math.random()) {
-                currentRoute = new ArrayList<>(newRoute);
+                currentSolution = new ArrayList<>(newSolution);
             }
 
-            if (calculateCost(currentRoute) < calculateCost(bestRoute)) {
-                bestRoute = new ArrayList<>(currentRoute);
+            if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
+                bestSolution = new ArrayList<>(currentSolution);
             }
 
-            temperature *= coolingRate;
-        }
-
-        return convertToRouteLegs(bestRoute, vehicleCapacity);
-    }
-
-    private Map<String, Double> distanceCache = new HashMap<>();
-
-    private double calculateCost(List<Address> route) {
-        double totalCost = 0.0;
-        for (int i = 0; i < route.size() - 1; i++) {
-            String key = createCacheKey(route.get(i), route.get(i + 1));
-            if (!distanceCache.containsKey(key)) {
-                GoogleMapsResponse response = googleMapsService.getDistanceMatrix(
-                        String.format("%f,%f", route.get(i).getLatitude(), route.get(i).getLongitude()),
-                        String.format("%f,%f", route.get(i + 1).getLatitude(), route.get(i + 1).getLongitude())
-                );
-                double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
-                distanceCache.put(key, distance);
+            // Check if all addresses are included in the current solution
+            if (!checkAllAddressesVisited(currentSolution, addresses)) {
+                // Consider additional logic or iterations to cover unvisited addresses
             }
-            totalCost += distanceCache.get(key);
+            else {
+                allAddressesVisited = true;
+            }
+
+            temperature *= 1 - coolingRate;
         }
-        return totalCost;
-    }
 
-    private String createCacheKey(Address origin, Address destination) {
-        return origin.getId() + "-" + destination.getId();
-    }
+        List<RouteLeg> finalRouteLegs = convertToRouteLegs(bestSolution, depot, vehicleCapacity);
 
 
-    private List<Address> generateNeighbor(List<Address> currentRoute, Long vehicleCapacity) {
-        // Generate a neighbor route by swapping two addresses
-        int a = random.nextInt(currentRoute.size());
-        int b = random.nextInt(currentRoute.size());
-        Collections.swap(currentRoute, a, b);
-        return currentRoute;
-    }
-
-    private double acceptanceProbability(double energy, double newEnergy, double temperature) {
-        if (newEnergy < energy) {
-            return 1.0;
+        System.out.println("Final Route:");
+        for (RouteLeg leg : finalRouteLegs) {
+            System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
+                    " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s");
         }
-        return Math.exp((energy - newEnergy) / temperature);
+
+
+        System.out.println("\n\nGoogle Maps API requests count: " + googleMapsRequestCount);
+        return finalRouteLegs;
     }
 
-    private List<RouteLeg> convertToRouteLegs(List<Address> addresses, Long vehicleCapacity) {
+
+
+    public List<Address> generateInitialSolution(List<Address> addresses) {
+        // Assuming the first address is the depot
+        Address depot = findDepot(addresses);
+
+        // Create a list for the initial solution with the depot as the first address
+        List<Address> initialSolution = new ArrayList<>();
+        initialSolution.add(depot);
+
+        // Add the rest of the addresses in a shuffled order
+        List<Address> shuffledAddresses = new ArrayList<>(addresses.subList(1, addresses.size()));
+        Collections.shuffle(shuffledAddresses);
+        initialSolution.addAll(shuffledAddresses);
+
+        return initialSolution;
+    }
+
+    private List<Address> generateNeighborSolution(List<Address> currentSolution, Long vehicleCapacity) {
+        List<Address> neighborSolution = new ArrayList<>(currentSolution);
+
+        // Randomly select two indices to swap, ensuring that depot (index 0) is not selected
+        int index1 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+        int index2 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+
+        // Ensure two different indices are selected
+        while (index1 == index2) {
+            index2 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+        }
+
+        // Swap the addresses at these indices
+        Collections.swap(neighborSolution, index1, index2);
+
+        // Adjust for capacity if necessary
+        adjustForCapacity(neighborSolution, vehicleCapacity);
+
+        return neighborSolution;
+    }
+
+    private double calculateObjectiveValue(List<Address> solution) {
+        double totalTravelTime = 0.0;  // Total time in seconds
+        double totalDistance = 0.0;    // Total distance in meters
+
+        for (int i = 0; i < solution.size() - 1; i++) {
+            // Fetch time and distance between consecutive addresses
+            TimeDistance timeDistance = getTimeDistanceBetweenAddresses(solution.get(i), solution.get(i + 1));
+            totalTravelTime += timeDistance.getTime();     // Accumulate time in seconds
+            totalDistance += timeDistance.getDistance();   // Accumulate distance in meters
+        }
+
+        // Convert time to hours and distance to kilometers for a more balanced comparison
+        double timeInHours = totalTravelTime / 3600.0;
+        double distanceInKilometers = totalDistance / 1000.0;
+
+        // Define weights or factors as per requirement
+        double timeWeightFactor = 1.0;   // Adjust as needed
+        double distanceWeightFactor = 0.5; // Adjust as needed
+
+        // Objective value considering both time and distance
+        return (timeInHours * timeWeightFactor) + (distanceInKilometers * distanceWeightFactor);
+    }
+
+
+    /*
+    private List<Address> adjustRouteForCapacity(List<Address> currentSolution, Long vehicleCapacity) {
+        List<Address> adjustedSolution = new ArrayList<>();
+        Long currentCapacity = vehicleCapacity;
+
+        for (Address address : currentSolution) {
+            if (!canVisitNextAddress(address, currentCapacity)) {
+                // Add depot to the route and reset capacity
+                adjustedSolution.add(currentSolution.get(0)); // Add depot
+                currentCapacity = vehicleCapacity;
+            }
+            adjustedSolution.add(address);
+            currentCapacity -= address.getUnit();
+        }
+        return adjustedSolution;
+    }*/
+
+    private void adjustForCapacity(List<Address> solution, Long vehicleCapacity) {
+        long currentCapacity = vehicleCapacity;
+        Address depot = findDepot(solution); // Find the depot once
+
+        for (int i = 1; i < solution.size(); i++) { // Skip depot at index 0
+            Address address = solution.get(i);
+            if (currentCapacity < address.getUnit()) {
+                // Insert the depot address to refill and reset the capacity
+                solution.add(i, depot);
+                currentCapacity = vehicleCapacity;
+            } else {
+                currentCapacity -= address.getUnit();
+            }
+        }
+    }
+
+
+    private void refillIfNecessary(List<Address> solution, Long vehicleCapacity) {
+        Long currentCapacity = vehicleCapacity;
+        for (int i = 0; i < solution.size(); i++) {
+            Address address = solution.get(i);
+            if (currentCapacity < address.getUnit()) {
+                // Insert the depot as the next address and reset capacity
+                solution.add(i, findDepot(solution));
+                currentCapacity = vehicleCapacity;
+                i++; // Skip the newly added depot address in the next iteration
+            } else {
+                currentCapacity -= address.getUnit();
+            }
+        }
+    }
+
+    private List<RouteLeg> convertToRouteLegs(List<Address> bestSolution, Address depot, Long vehicleCapacity) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        double totalDistance = 0.0;
-        double totalTime = 0.0;
+        Long currentCapacity = vehicleCapacity; // Assuming vehicleCapacity is accessible here
 
-        for (int i = 0; i < addresses.size() - 1; i++) {
-            Address origin = addresses.get(i);
-            Address destination = addresses.get(i + 1);
-            double distance = getDistanceFromCache(origin, destination);
-            double time = calculateTime(distance);  // Assuming you have a method to calculate time based on distance
+        for (int i = 0; i < bestSolution.size() - 1; i++) {
+            Address from = bestSolution.get(i);
+            Address to = bestSolution.get(i + 1);
 
-            totalDistance += distance;
-            totalTime += time;
-
-            routeLegs.add(new RouteLeg(origin.getId(), destination.getId(), distance, time, vehicleCapacity));
+            // Check if the next address exceeds the current capacity
+            if (to.getUnit() > currentCapacity) {
+                // Add leg back to depot from 'from'
+                TimeDistance backToDepot = getTimeDistanceBetweenAddresses(from, depot);
+                routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(), depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance()));
+                // Reset capacity
+                currentCapacity = vehicleCapacity;
+                // Add leg from depot to 'to'
+                TimeDistance fromDepot = getTimeDistanceBetweenAddresses(depot, to);
+                routeLegs.add(new RouteLeg(depot.getId(), to.getId(), depot.getLatitude(), depot.getLongitude(), to.getLatitude(), to.getLongitude(), fromDepot.getTime(), fromDepot.getDistance()));
+            } else {
+                // Add leg from 'from' to 'to'
+                TimeDistance timeDistance = getTimeDistanceBetweenAddresses(from, to);
+                routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(), to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance()));
+            }
+            currentCapacity -= to.getUnit();
         }
 
-        System.out.println("Total Distance: " + totalDistance + " km");
-        System.out.println("Total Time: " + totalTime + " hours");
+        // Ensure the last leg returns to the depot if not already there
+        Address lastAddress = bestSolution.get(bestSolution.size() - 1);
+        if (!lastAddress.equals(depot)) {
+            TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
+            routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(), depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance()));
+        }
 
         return routeLegs;
     }
 
-    private double getDistanceFromCache(Address origin, Address destination) {
-        String key = origin.getId() + "-" + destination.getId();
-        if (!distanceCache.containsKey(key)) {
-            double distance = googleMapsService.getDistanceMatrix(
-                    String.format(Locale.US, "%f,%f", origin.getLatitude(), origin.getLongitude()),
-                    String.format(Locale.US, "%f,%f", destination.getLatitude(), destination.getLongitude())
-            ).getRows().get(0).getElements().get(0).getDistance().getValue();
-            distanceCache.put(key, distance);
+    private TimeDistance getTimeDistanceBetweenAddresses(Address from, Address to) {
+
+        String cacheKey = from.getLatitude() + "," + from.getLongitude() + "->" + to.getLatitude() + "," + to.getLongitude();
+
+        if (distanceCache.containsKey(cacheKey)) {
+            return distanceCache.get(cacheKey);
         }
-        return distanceCache.get(key);
-    }
-
-    private double calculateTime(double distance) {
-        double averageSpeed = 60.0; // Average speed in km/h
-        return distance / averageSpeed; // Time in hours
-    }
 
 
-    private List<Address> createInitialRoute(List<Address> addresses, Long vehicleCapacity) {
-        // Create an initial feasible route respecting vehicle capacities
-        Collections.shuffle(addresses);
-        return addresses; // This is a simplification
+        GoogleMapsResponse response = googleMapsService.getDistanceMatrix(
+                from.getLatitude() + "," + from.getLongitude(),
+                to.getLatitude() + "," + to.getLongitude()
+        );
+        googleMapsRequestCount++;
+
+        if (response == null || response.getRows().isEmpty() || response.getRows().get(0).getElements().isEmpty()) {
+            TimeDistance errorResult = new TimeDistance(Double.MAX_VALUE, Double.MAX_VALUE); // Handle error
+            distanceCache.put(cacheKey, errorResult);
+            return errorResult;
+        }
+
+        Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
+        Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
+        TimeDistance result = new TimeDistance(time, distance);
+
+        // Cache the result
+        distanceCache.put(cacheKey, result);
+
+        return result;
     }
+
+
+
+    private double acceptanceProbability(double currentEnergy, double newEnergy, double temperature) {
+        if (newEnergy < currentEnergy) {
+            return 1.0;
+        }
+        return Math.exp((currentEnergy - newEnergy) / temperature);
+    }
+
+
+    /*
+    private List<Address> refillAtDepot(List<Address> solution, Long currentCapacity, Long vehicleCapacity, Address depot) {
+        if (currentCapacity <= 0) {
+            // Insert depot to refill
+            solution.add(0, depot); // Add depot at the beginning
+            currentCapacity = vehicleCapacity; // Reset capacity
+        }
+        return solution;
+    }*/
+
+    private Address findDepot(List<Address> addresses) {
+        return addresses.stream()
+                .filter(address -> address.getId().equals(1L)) // Assuming depot's ID is 1
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Depot not found"));
+    }
+
+
+    private boolean checkAllAddressesVisited(List<Address> currentSolution, List<Address> allAddresses) {
+        Set<Long> visitedAddressIds = currentSolution.stream().map(Address::getId).collect(Collectors.toSet());
+        return allAddresses.stream().allMatch(address -> visitedAddressIds.contains(address.getId()));
+    }
+
+
+
+    private boolean canVisitNextAddress(Address nextAddress, Long currentCapacity) {
+        return nextAddress.getUnit() <= currentCapacity;
+    }
+
+
+
+
+
+
 }
+
+

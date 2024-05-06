@@ -27,7 +27,13 @@ public class CvrpApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(CvrpApplication.class, args);
-		/*
+
+		//importCSV();
+
+	}
+/*
+
+	private static void importCSV(){
 		String csvFilePath = "C:\\Users\\Önder\\Documents\\Germany-Berlin.csv";
 		String apiUrl = "http://localhost:8080/address/add"; // Replace with your API URL
 
@@ -35,16 +41,15 @@ public class CvrpApplication {
 			for (CSVRecord record : parser) {
 				String lat = record.get("LAT");
 				String lon = record.get("LON");
-				String unit = record.get("UNIT"); // Retrieve the size value
+				String unit = record.get("UNIT"); // Retrieve the unit value
 
-				sendPostRequest(apiUrl, lat, lon, unit); // Include size in the POST request
+				sendPostRequest(apiUrl, lat, lon, unit); // Include unit in the POST request
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		 */
 	}
-/*
+
 	private static void sendPostRequest(String apiUrl, String lat, String lon, String unit) {
 		try (CloseableHttpClient client = HttpClients.createDefault()) {
 			HttpPost httpPost = new HttpPost(apiUrl);

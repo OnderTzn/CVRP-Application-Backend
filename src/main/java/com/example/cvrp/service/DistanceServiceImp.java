@@ -6,7 +6,6 @@ import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +22,8 @@ public class DistanceServiceImp {
 
         routingAlgorithms = new HashMap<>();
         routingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
-        //routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
         routingAlgorithms.put("Savings", new SavingsAlgorithm(googleMapsService));
+        routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
     }
 
     public List<RouteLeg> calculateOptimalRoute(String algorithmType, int addressLimit, Long vehicleCapacity) {

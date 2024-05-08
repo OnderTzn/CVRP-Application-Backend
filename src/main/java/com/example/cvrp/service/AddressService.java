@@ -19,4 +19,6 @@ public interface AddressService {
     List<Address> findAllAddresses();
 
     List<Address> findAllAddresses(int addressLimit);
+
+    List<Address> getAddressesByIds(List<Long> ids);
 }

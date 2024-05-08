@@ -36,6 +36,16 @@ public class DistanceServiceImp {
         }
     }
 
+    public List<RouteLeg> calculateRoute(Address depot, List<Address> addressList, Long vehicleCapacity) {
+        RoutingAlgorithm nearestNeighborAlgorithm = routingAlgorithms.get("NearestNeighbor");
+        if (nearestNeighborAlgorithm != null) {
+            return nearestNeighborAlgorithm.calculateRouteWithDepot(depot, addressList, vehicleCapacity);
+        } else {
+            throw new IllegalArgumentException("NearestNeighbor algorithm is not available.");
+        }
+    }
+
+
     public RouteCalculationResult calculateRouteAndGetDetails(String algorithmType, int addressLimit, Long vehicleCapacity) {
         RoutingAlgorithm selectedAlgorithm = routingAlgorithms.get(algorithmType);
         if (selectedAlgorithm == null) {
@@ -64,5 +74,7 @@ public class DistanceServiceImp {
         // Return a new RouteCalculationResult with the calculated values
         return new RouteCalculationResult(route, executionTime, totalDistance, totalTime, returnsToDepot);
     }
+
+
 }
 

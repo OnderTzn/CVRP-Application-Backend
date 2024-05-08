@@ -23,10 +23,10 @@ public class RouteTestServiceImp {
         log.info("Starting the test process...");
 
         // Define the specific combinations of addressCounts and capacities
-        int[] addressCounts = {40};
-        long[] capacities = {50L}; // Make sure the lengths of addressCounts and capacities are equal
+        int[] addressCounts = {15};
+        long[] capacities = {20L}; // Make sure the lengths of addressCounts and capacities are equal
 
-        String[] algorithms = {"NearestNeighbor", "Savings"};
+        String[] algorithms = {"NearestNeighbor"}; //NearestNeighbor   // Savings   // SimulatedAnnealing   // AlgorithmName
 
         for (String algorithm : algorithms) {
             for (int i = 0; i < addressCounts.length; i++) { // Assumes capacities.length == addressCounts.length
@@ -43,7 +43,7 @@ public class RouteTestServiceImp {
                         algorithm, addressCount, capacity, (endTime - startTime), String.format("%.2f", result.getTotalTime()), String.format("%.2f", result.getTotalDistance()), result.getReturnsToDepot());
             }
         }
-
+        // curl http://localhost:8080/api/tests/run
         log.info("Test process completed.");
     }
 

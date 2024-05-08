@@ -9,7 +9,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -52,5 +54,24 @@ public class AddressServiceImp implements AddressService {
     public List<Address> findAllAddresses(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         return addressRepository.findAll(pageable).getContent();
+    }
+
+    public List<Address> getAddressesByIds(List<Long> addressIds) {
+        // Check if the list is null or empty
+        if (addressIds == null || addressIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Filter out any null values from the list
+        List<Long> filteredIds = addressIds.stream()
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+
+        // If all IDs were null, return an empty list
+        if (filteredIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return addressRepository.findAllById(filteredIds);
     }
 }

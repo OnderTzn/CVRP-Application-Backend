@@ -20,11 +20,16 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         this.googleMapsService = googleMapsService;
     }
 
+    @Override
+    public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
+        return List.of();
+    }
+
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        System.out.println("Received addresses from Savings Algorithm:");
+        /*System.out.println("Received addresses from Savings Algorithm:");
         for (Address address : addresses) {
             System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
-        }
+        }*/
 
         // Assume the first address is the depot
         Address depot = addresses.get(0);
@@ -124,11 +129,11 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         }*/
 
         // Print the routeLegs before returning
-        System.out.println("Complete Route Legs:");
+        /*System.out.println("Complete Route Legs:");
         for (RouteLeg leg : routeLegs) {
             System.out.println("Leg from ID: " + leg.getOriginId() + " to ID: " + leg.getDestinationId() +
                     ", Time: " + leg.getTime() + "s, Distance: " + leg.getDistance() + "m");
-        }
+        }*/
 
         return routeLegs;
     }

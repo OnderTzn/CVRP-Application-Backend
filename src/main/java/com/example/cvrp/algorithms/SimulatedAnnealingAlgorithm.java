@@ -17,12 +17,17 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private double temperature = 10000;
-    private double coolingRate = 0.99;
+    private double coolingRate = 0.10;
     private boolean allAddressesVisited = false;
     private int googleMapsRequestCount = 0;
 
     public SimulatedAnnealingAlgorithm(GoogleMapsServiceImp googleMapsService) {
         this.googleMapsService = googleMapsService;
+    }
+
+    @Override
+    public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
+        return List.of();
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {

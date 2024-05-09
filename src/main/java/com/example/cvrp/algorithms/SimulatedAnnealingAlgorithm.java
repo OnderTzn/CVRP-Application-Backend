@@ -17,7 +17,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private double temperature = 10000;
-    private double coolingRate = 0.10;
+    private double coolingRate = 0.0005;
     private boolean allAddressesVisited = false;
     private int googleMapsRequestCount = 0;
 
@@ -40,7 +40,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         }
 
         while (temperature > 1) {
-            System.out.println("TEMPERATURE: " + temperature);
+            //System.out.println("TEMPERATURE: " + temperature);
             List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
 
             // Adjust the solution for capacity constraints
@@ -55,6 +55,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
             if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
                 bestSolution = new ArrayList<>(currentSolution);
+                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
             }
 
             // Check if all addresses are included in the current solution
@@ -129,38 +130,12 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
             // Fetch time and distance between consecutive addresses
             TimeDistance timeDistance = getTimeDistanceBetweenAddresses(solution.get(i), solution.get(i + 1));
             totalTravelTime += timeDistance.getTime();     // Accumulate time in seconds
-            totalDistance += timeDistance.getDistance();   // Accumulate distance in meters
+            //totalDistance += timeDistance.getDistance();   // Accumulate distance in meters
         }
 
-        // Convert time to hours and distance to kilometers for a more balanced comparison
-        double timeInHours = totalTravelTime / 3600.0;
-        double distanceInKilometers = totalDistance / 1000.0;
+        return totalTravelTime;
 
-        // Define weights or factors as per requirement
-        double timeWeightFactor = 1.0;   // Adjust as needed
-        double distanceWeightFactor = 0.5; // Adjust as needed
-
-        // Objective value considering both time and distance
-        return (timeInHours * timeWeightFactor) + (distanceInKilometers * distanceWeightFactor);
     }
-
-
-    /*
-    private List<Address> adjustRouteForCapacity(List<Address> currentSolution, Long vehicleCapacity) {
-        List<Address> adjustedSolution = new ArrayList<>();
-        Long currentCapacity = vehicleCapacity;
-
-        for (Address address : currentSolution) {
-            if (!canVisitNextAddress(address, currentCapacity)) {
-                // Add depot to the route and reset capacity
-                adjustedSolution.add(currentSolution.get(0)); // Add depot
-                currentCapacity = vehicleCapacity;
-            }
-            adjustedSolution.add(address);
-            currentCapacity -= address.getUnit();
-        }
-        return adjustedSolution;
-    }*/
 
     private void adjustForCapacity(List<Address> solution, Long vehicleCapacity) {
         long currentCapacity = vehicleCapacity;
@@ -262,24 +237,12 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     }
 
 
-
     private double acceptanceProbability(double currentEnergy, double newEnergy, double temperature) {
         if (newEnergy < currentEnergy) {
             return 1.0;
         }
         return Math.exp((currentEnergy - newEnergy) / temperature);
     }
-
-
-    /*
-    private List<Address> refillAtDepot(List<Address> solution, Long currentCapacity, Long vehicleCapacity, Address depot) {
-        if (currentCapacity <= 0) {
-            // Insert depot to refill
-            solution.add(0, depot); // Add depot at the beginning
-            currentCapacity = vehicleCapacity; // Reset capacity
-        }
-        return solution;
-    }*/
 
     private Address findDepot(List<Address> addresses) {
         return addresses.stream()
@@ -300,11 +263,4 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         return nextAddress.getUnit() <= currentCapacity;
     }
 
-
-
-
-
-
 }
-
-

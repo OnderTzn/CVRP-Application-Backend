@@ -66,6 +66,7 @@ public class AddressController {
 
     @PostMapping("/calculate-route")
     public ResponseEntity<?> calculateRoute(@RequestBody RouteRequest routeRequest) {
+        System.out.println("Algorithm Type: " + routeRequest.getAlgorithm());
         System.out.println("Depot ID: " + routeRequest.getDepotId());
         System.out.println("Address IDs: " + routeRequest.getAddressList());
         System.out.println("Vehicle Capacity: " + routeRequest.getCapacity());
@@ -77,7 +78,7 @@ public class AddressController {
         System.out.println("Number of addresses fetched: " + addresses.size());
         addresses.forEach(address -> System.out.println("Fetched address ID: " + address.getId()));
 
-        List<RouteLeg> routeLegs = distanceService.calculateRoute(depot, addresses, routeRequest.getCapacity());
+        List<RouteLeg> routeLegs = distanceService.calculateRoute(routeRequest.getAlgorithm(), depot, addresses, routeRequest.getCapacity());
         System.out.println("Number of route legs calculated: " + routeLegs.size());
         return ResponseEntity.ok(routeLegs);
     }

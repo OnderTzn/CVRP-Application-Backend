@@ -22,7 +22,18 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
     @Override
     public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
-        return List.of();
+
+        // Initialize individual routes from depot to each customer and back
+        List<List<Address>> routes = initializeRoutes(addresses);
+
+        // Calculate savings for all pairs of customers
+        PriorityQueue<Saving> savingsQueue = calculateSavings(addresses, depot);
+
+        // Merge routes based on savings
+        mergeRoutes(savingsQueue, routes);
+
+        // Convert the list of addresses in routes to RouteLegs
+        return convertToRouteLegs(routes, vehicleCapacity);
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {

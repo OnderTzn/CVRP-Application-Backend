@@ -24,6 +24,7 @@ public class DistanceServiceImp {
         routingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
         routingAlgorithms.put("Savings", new SavingsAlgorithm(googleMapsService));
         routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
+        routingAlgorithms.put("NearestNeighborSA", new NearestNeighborSA(googleMapsService));
     }
 
     public List<RouteLeg> calculateOptimalRoute(String algorithmType, int addressLimit, Long vehicleCapacity) {
@@ -36,10 +37,10 @@ public class DistanceServiceImp {
         }
     }
 
-    public List<RouteLeg> calculateRoute(Address depot, List<Address> addressList, Long vehicleCapacity) {
-        RoutingAlgorithm nearestNeighborAlgorithm = routingAlgorithms.get("NearestNeighbor");
-        if (nearestNeighborAlgorithm != null) {
-            return nearestNeighborAlgorithm.calculateRouteWithDepot(depot, addressList, vehicleCapacity);
+    public List<RouteLeg> calculateRoute(String algorithm, Address depot, List<Address> addressList, Long vehicleCapacity) {
+        RoutingAlgorithm selectedAlgorithm = routingAlgorithms.get(algorithm);
+        if (selectedAlgorithm != null) {
+            return selectedAlgorithm.calculateRouteWithDepot(depot, addressList, vehicleCapacity);
         } else {
             throw new IllegalArgumentException("NearestNeighbor algorithm is not available.");
         }

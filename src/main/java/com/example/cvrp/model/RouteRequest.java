@@ -11,6 +11,9 @@ import java.util.List;
 @Setter
 public class RouteRequest {
 
+    @JsonProperty("algorithm")
+    private String algorithm;
+
     @JsonProperty("depot")
     private Long depotId;
 

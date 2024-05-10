@@ -17,7 +17,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private double temperature = 10000;
-    private double coolingRate = 0.0005;
+    private double coolingRate = 0.0001;
     private boolean allAddressesVisited = false;
     private int googleMapsRequestCount = 0;
 
@@ -27,24 +27,75 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
     @Override
     public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
-        return List.of();
-    }
-
-    public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        List<Address> currentSolution = generateInitialSolution(addresses);
+        List<Address> currentSolution = generateInitialSolution(addresses, depot);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
-        Address depot = findDepot(addresses);
+
         System.out.println("Received addresses from SA:");
         for (Address address : addresses) {
             System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
         }
 
         while (temperature > 1) {
-            //System.out.println("TEMPERATURE: " + temperature);
+            System.out.println("TEMPERATURE: " + temperature);
             List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
 
             // Adjust the solution for capacity constraints
-            refillIfNecessary(newSolution, vehicleCapacity);
+            //adjustForCapacity(newSolution, vehicleCapacity);
+
+            double currentEnergy = calculateObjectiveValue(currentSolution);
+            double neighborEnergy = calculateObjectiveValue(newSolution);
+
+            if (acceptanceProbability(currentEnergy, neighborEnergy, temperature) > Math.random()) {
+                currentSolution = new ArrayList<>(newSolution);
+            }
+
+            if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
+                bestSolution = new ArrayList<>(currentSolution);
+                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
+            }
+
+            // Check if all addresses are included in the current solution
+            if (!checkAllAddressesVisited(currentSolution, addresses)) {
+                // Consider additional logic or iterations to cover unvisited addresses
+            }
+            else {
+                allAddressesVisited = true;
+            }
+
+            temperature *= 1 - coolingRate;
+        }
+
+        List<RouteLeg> finalRouteLegs = convertToRouteLegs(bestSolution, depot, vehicleCapacity);
+
+
+        System.out.println("Final Route:");
+        for (RouteLeg leg : finalRouteLegs) {
+            System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
+                    " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s");
+        }
+
+
+        System.out.println("\n\nGoogle Maps API requests count: " + googleMapsRequestCount);
+        return finalRouteLegs;
+    }
+
+    public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
+
+        Address depot = findDepot(addresses);
+        List<Address> currentSolution = generateInitialSolution(addresses, depot);
+        List<Address> bestSolution = new ArrayList<>(currentSolution);
+
+        System.out.println("Received addresses from SA:");
+        for (Address address : addresses) {
+            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
+        }
+
+        while (temperature > 1) {
+            System.out.println("TEMPERATURE: " + temperature);
+            List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
+
+            // Adjust the solution for capacity constraints
+            //adjustForCapacity(newSolution, vehicleCapacity);
 
             double currentEnergy = calculateObjectiveValue(currentSolution);
             double neighborEnergy = calculateObjectiveValue(newSolution);
@@ -85,16 +136,14 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
 
 
-    public List<Address> generateInitialSolution(List<Address> addresses) {
-        // Assuming the first address is the depot
-        Address depot = findDepot(addresses);
+    public List<Address> generateInitialSolution(List<Address> addresses, Address depot) {
 
         // Create a list for the initial solution with the depot as the first address
         List<Address> initialSolution = new ArrayList<>();
         initialSolution.add(depot);
 
         // Add the rest of the addresses in a shuffled order
-        List<Address> shuffledAddresses = new ArrayList<>(addresses.subList(1, addresses.size()));
+        List<Address> shuffledAddresses = new ArrayList<>(addresses.subList(1, addresses.size())); // Shuffles the list of addresses excluding the depot
         Collections.shuffle(shuffledAddresses);
         initialSolution.addAll(shuffledAddresses);
 
@@ -117,7 +166,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         Collections.swap(neighborSolution, index1, index2);
 
         // Adjust for capacity if necessary
-        adjustForCapacity(neighborSolution, vehicleCapacity);
+        //adjustForCapacity(neighborSolution, vehicleCapacity);
 
         return neighborSolution;
     }
@@ -153,25 +202,9 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         }
     }
 
-
-    private void refillIfNecessary(List<Address> solution, Long vehicleCapacity) {
-        Long currentCapacity = vehicleCapacity;
-        for (int i = 0; i < solution.size(); i++) {
-            Address address = solution.get(i);
-            if (currentCapacity < address.getUnit()) {
-                // Insert the depot as the next address and reset capacity
-                solution.add(i, findDepot(solution));
-                currentCapacity = vehicleCapacity;
-                i++; // Skip the newly added depot address in the next iteration
-            } else {
-                currentCapacity -= address.getUnit();
-            }
-        }
-    }
-
     private List<RouteLeg> convertToRouteLegs(List<Address> bestSolution, Address depot, Long vehicleCapacity) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        Long currentCapacity = vehicleCapacity; // Assuming vehicleCapacity is accessible here
+        Long currentCapacity = vehicleCapacity;
 
         for (int i = 0; i < bestSolution.size() - 1; i++) {
             Address from = bestSolution.get(i);
@@ -212,7 +245,6 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         if (distanceCache.containsKey(cacheKey)) {
             return distanceCache.get(cacheKey);
         }
-
 
         GoogleMapsResponse response = googleMapsService.getDistanceMatrix(
                 from.getLatitude() + "," + from.getLongitude(),

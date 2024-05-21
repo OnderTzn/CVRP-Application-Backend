@@ -21,32 +21,26 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
     }
 
     @Override
-    public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
-
+    public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
         // Initialize individual routes from depot to each customer and back
-        List<List<Address>> routes = initializeRoutes(addresses);
+        List<List<Address>> routes = initializeRoutes(addresses, depot);
 
-        // Calculate savings for all pairs of customers
+        // Calculate savings for all pairs of addresses
         PriorityQueue<Saving> savingsQueue = calculateSavings(addresses, depot);
 
         // Merge routes based on savings
         mergeRoutes(savingsQueue, routes);
 
         // Convert the list of addresses in routes to RouteLegs
-        return convertToRouteLegs(routes, vehicleCapacity);
+        return convertToRouteLegs(routes, depot, vehicleCapacity);
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        /*System.out.println("Received addresses from Savings Algorithm:");
-        for (Address address : addresses) {
-            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
-        }*/
-
         // Assume the first address is the depot
         Address depot = addresses.get(0);
 
         // Initialize individual routes from depot to each customer and back
-        List<List<Address>> routes = initializeRoutes(addresses);
+        List<List<Address>> routes = initializeRoutes(addresses, depot);
 
         // Calculate savings for all pairs of customers
         PriorityQueue<Saving> savingsQueue = calculateSavings(addresses, depot);
@@ -55,12 +49,11 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         mergeRoutes(savingsQueue, routes);
 
         // Convert the list of addresses in routes to RouteLegs
-        return convertToRouteLegs(routes, vehicleCapacity);
+        return convertToRouteLegs(routes, depot, vehicleCapacity);
     }
 
-    private List<List<Address>> initializeRoutes(List<Address> addresses) {
+    private List<List<Address>> initializeRoutes(List<Address> addresses, Address depot) {
         List<List<Address>> routes = new ArrayList<>();
-        Address depot = addresses.get(0); // Assuming the depot is the first address
         for (int i = 1; i < addresses.size(); i++) {
             List<Address> route = new ArrayList<>();
             route.add(depot); // Start from the depot
@@ -70,7 +63,6 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         }
         return routes;
     }
-
 
     private PriorityQueue<Saving> calculateSavings(List<Address> addresses, Address depot) {
         PriorityQueue<Saving> savingsQueue = new PriorityQueue<>(Comparator.comparing(Saving::getSaving).reversed());
@@ -92,7 +84,6 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         return depotToA.getTime() + depotToB.getTime() - aToB.getTime();
     }
 
-
     private void mergeRoutes(PriorityQueue<Saving> savingsQueue, List<List<Address>> routes) {
         while (!savingsQueue.isEmpty()) {
             Saving saving = savingsQueue.poll();
@@ -106,45 +97,53 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         }
     }
 
-
-    private List<RouteLeg> convertToRouteLegs(List<List<Address>> routes, Long vehicleCapacity) {
+    private List<RouteLeg> convertToRouteLegs(List<List<Address>> routes, Address depot, Long vehicleCapacity) {
         List<RouteLeg> routeLegs = new ArrayList<>();
         Long currentCapacity = vehicleCapacity;
-        Address depot = routes.get(0).get(0); // Assuming the depot is the first address of the first route
 
         for (List<Address> route : routes) {
             for (int i = 0; i < route.size() - 1; i++) {
                 Address from = route.get(i);
                 Address to = route.get(i + 1);
+                Long remainingDemand = to.getUnit(); // Make a copy of the demand
 
-                if (to.getUnit() > currentCapacity) {
-                    // Add leg back to depot
-                    routeLegs.add(createRouteLegBetweenAddresses(from, depot));
-                    // Reset capacity
-                    currentCapacity = vehicleCapacity;
-                    // Add leg from depot to 'to'
-                    routeLegs.add(createRouteLegBetweenAddresses(depot, to));
-                } else {
-                    // Add leg from 'from' to 'to'
-                    routeLegs.add(createRouteLegBetweenAddresses(from, to));
+                while (remainingDemand > 0) {
+                    if (remainingDemand > currentCapacity) {
+                        routeLegs.addAll(deliverUnits(from, to, currentCapacity));
+                        remainingDemand -= currentCapacity;
+                        currentCapacity = vehicleCapacity;
+                        routeLegs.addAll(returnToDepotAndRefill(to, depot));
+                        from = depot;
+                    } else {
+                        routeLegs.addAll(deliverUnits(from, to, remainingDemand));
+                        currentCapacity -= remainingDemand;
+                        remainingDemand = 0L;
+                    }
                 }
-                currentCapacity -= to.getUnit();
+
+                // If the current capacity is 0 after unloading, return to the depot to refill before proceeding
+                if (currentCapacity == 0 && !to.equals(depot)) {
+                    routeLegs.addAll(returnToDepotAndRefill(to, depot));
+                    currentCapacity = vehicleCapacity;
+
+                    // Add leg from depot to next address with the next address's demand
+                    if (i < route.size() - 2) {
+                        Address nextTo = route.get(i + 2);
+                        routeLegs.addAll(addLegFromDepotToNextAddress(depot, nextTo, nextTo.getUnit()));
+                        i++;
+                    }
+                }
             }
         }
-        /* Maybe redundant, current capacity is always => 0 and depot has 0 demand
-        // Make sure the last leg returns to the depot if not already there
-        Long lastDestinationId = routeLegs.get(routeLegs.size() - 1).getDestinationId();
-        Address lastAddress = findAddressById(lastDestinationId, addresses);
-        if (lastDestinationId != null && !lastDestinationId.equals(depot.getId())) {
-            routeLegs.add(createRouteLegBetweenAddresses(depot, depot));
-        }*/
 
-        // Print the routeLegs before returning
-        /*System.out.println("Complete Route Legs:");
+        // Ensure the last leg returns to the depot
+        addFinalLegToDepot(routes, depot, routeLegs);
+
+        System.out.println("Final Route:");
         for (RouteLeg leg : routeLegs) {
-            System.out.println("Leg from ID: " + leg.getOriginId() + " to ID: " + leg.getDestinationId() +
-                    ", Time: " + leg.getTime() + "s, Distance: " + leg.getDistance() + "m");
-        }*/
+            System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
+                    " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s, Capacity Used: " + leg.getVehicleCapacity() + " units");
+        }
 
         return routeLegs;
     }
@@ -157,7 +156,41 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
                 timeDistance.getTime(), timeDistance.getDistance());
     }
 
+    private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance timeDistance = getTravelTime(from, to);
+        routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(),
+                to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance(), units));
+        return routeLegs;
+    }
 
+    private List<RouteLeg> returnToDepotAndRefill(Address from, Address depot) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance backToDepot = getTravelTime(from, depot);
+        routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(),
+                depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
+        return routeLegs;
+    }
+
+    private List<RouteLeg> addLegFromDepotToNextAddress(Address depot, Address nextTo, Long units) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance fromDepot = getTravelTime(depot, nextTo);
+        routeLegs.add(new RouteLeg(depot.getId(), nextTo.getId(), depot.getLatitude(), depot.getLongitude(),
+                nextTo.getLatitude(), nextTo.getLongitude(), fromDepot.getTime(), fromDepot.getDistance(), units));
+        return routeLegs;
+    }
+
+    private void addFinalLegToDepot(List<List<Address>> routes, Address depot, List<RouteLeg> routeLegs) {
+        List<Address> lastRoute = routes.get(routes.size() - 1);
+        //lastRoute consists the addresses. To create a leg to depot, we need to get the address before the depot. Hence, it's size() -2
+        Address lastAddress = lastRoute.get(lastRoute.size() - 2);
+
+        if (!lastAddress.equals(depot)) {
+            TimeDistance backToDepot = getTravelTime(lastAddress, depot);
+            routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(),
+                    depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
+        }
+    }
 
     // Helper Methods
     private TimeDistance getTravelTime(Address from, Address to) {
@@ -206,16 +239,5 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         // Remove the merged route2 from the list of all routes
         allRoutes.remove(route2);
     }
-
-    private Address findAddressById(Long id, List<Address> addresses) {
-        for (Address address : addresses) {
-            if (address.getId().equals(id)) {
-                return address;
-            }
-        }
-        return null; // Handle this case appropriately
-    }
-
-
 
 }

@@ -14,8 +14,7 @@ public class NearestNeighborSA implements RoutingAlgorithm {
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private double temperature = 10000;
-    private double coolingRate = 0.0001;
-    private boolean allAddressesVisited = false;
+    private final double coolingRate = 0.0001;
     private int googleMapsRequestCount = 0;
 
 
@@ -24,7 +23,7 @@ public class NearestNeighborSA implements RoutingAlgorithm {
     }
 
     @Override
-    public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
+    public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
         // Ensure the depot is included in the addresses list if not already
         if (!addresses.contains(depot)) {
             addresses.add(0, depot); // Add depot as the first address if it's not included
@@ -35,10 +34,10 @@ public class NearestNeighborSA implements RoutingAlgorithm {
 
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
-        System.out.println("Received addresses from SA:");
+        /*System.out.println("Received addresses from SA:");
         for (Address address : addresses) {
             System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
-        }
+        }*/
 
         while (temperature > 1) {
             //System.out.println("TEMPERATURE: " + temperature);
@@ -54,14 +53,6 @@ public class NearestNeighborSA implements RoutingAlgorithm {
             if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
                 bestSolution = new ArrayList<>(currentSolution);
                 System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
-            }
-
-            // Check if all addresses are included in the current solution
-            if (!checkAllAddressesVisited(currentSolution, addresses)) {
-                // Consider additional logic or iterations to cover unvisited addresses
-            }
-            else {
-                allAddressesVisited = true;
             }
 
             temperature *= 1 - coolingRate;
@@ -87,10 +78,10 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         List<Address> currentSolution = generateInitialSolutionForSA(addresses);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
-        System.out.println("Received addresses from SA:");
+        /*System.out.println("Received addresses from SA:");
         for (Address address : addresses) {
             System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
-        }
+        }*/
 
         while (temperature > 1) {
 
@@ -108,14 +99,6 @@ public class NearestNeighborSA implements RoutingAlgorithm {
             if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
                 bestSolution = new ArrayList<>(currentSolution);
                 System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
-            }
-
-            // Check if all addresses are included in the current solution
-            if (!checkAllAddressesVisited(currentSolution, addresses)) {
-                // Consider additional logic or iterations to cover unvisited addresses
-            }
-            else {
-                allAddressesVisited = true;
             }
 
             temperature *= 1 - coolingRate;
@@ -176,31 +159,40 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         for (int i = 0; i < bestSolution.size() - 1; i++) {
             Address from = bestSolution.get(i);
             Address to = bestSolution.get(i + 1);
+            Long remainingDemand = to.getUnit();  // Make a copy of the demand
 
-            // Check if the next address exceeds the current capacity
-            if (to.getUnit() > currentCapacity) {
-                // Add leg back to depot from 'from'
-                TimeDistance backToDepot = getTimeDistanceBetweenAddresses(from, depot);
-                routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(), depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance()));
-                // Reset capacity
-                currentCapacity = vehicleCapacity;
-                // Add leg from depot to 'to'
-                TimeDistance fromDepot = getTimeDistanceBetweenAddresses(depot, to);
-                routeLegs.add(new RouteLeg(depot.getId(), to.getId(), depot.getLatitude(), depot.getLongitude(), to.getLatitude(), to.getLongitude(), fromDepot.getTime(), fromDepot.getDistance()));
-            } else {
-                // Add leg from 'from' to 'to'
-                TimeDistance timeDistance = getTimeDistanceBetweenAddresses(from, to);
-                routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(), to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance()));
+            while (remainingDemand > 0) {
+                if (remainingDemand > currentCapacity) {
+                    // Deliver as much as possible with the current capacity
+                    routeLegs.addAll(deliverUnits(from, to, currentCapacity));
+                    remainingDemand -= currentCapacity;
+                    currentCapacity = vehicleCapacity;
+                    routeLegs.addAll(returnToDepotAndRefill(to, depot));
+                    from = depot;
+                } else {
+                    // Deliver the remaining units
+                    routeLegs.addAll(deliverUnits(from, to, remainingDemand));
+                    currentCapacity -= remainingDemand;
+                    remainingDemand = 0L;
+                }
             }
-            currentCapacity -= to.getUnit();
+
+            // If the current capacity is 0 after unloading, return to the depot to refill before proceeding
+            if (currentCapacity == 0) {
+                routeLegs.addAll(returnToDepotAndRefill(to, depot));
+                currentCapacity = vehicleCapacity;
+
+                // Add leg from depot to next address with the next address' demand
+                if (i < bestSolution.size() - 2) { // Check to avoid out-of-bounds error
+                    Address nextTo = bestSolution.get(i + 2);
+                    routeLegs.addAll(addLegFromDepotToNextAddress(depot, nextTo, nextTo.getUnit()));
+                    i++; // Skip the next address as it's already processed
+                }
+            }
         }
 
-        // Ensure the last leg returns to the depot if not already there
-        Address lastAddress = bestSolution.get(bestSolution.size() - 1);
-        if (!lastAddress.equals(depot)) {
-            TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
-            routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(), depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance()));
-        }
+        // Ensure the last leg returns to the depot
+        addFinalLegToDepot(bestSolution, depot, routeLegs);
 
         return routeLegs;
     }
@@ -251,17 +243,38 @@ public class NearestNeighborSA implements RoutingAlgorithm {
     }
 
 
-    private boolean checkAllAddressesVisited(List<Address> currentSolution, List<Address> allAddresses) {
-        Set<Long> visitedAddressIds = currentSolution.stream().map(Address::getId).collect(Collectors.toSet());
-        return allAddresses.stream().allMatch(address -> visitedAddressIds.contains(address.getId()));
+    private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance timeDistance = getTimeDistanceBetweenAddresses(from, to);
+        routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(),
+                to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance(), units));
+        return routeLegs;
     }
 
-
-
-    private boolean canVisitNextAddress(Address nextAddress, Long currentCapacity) {
-        return nextAddress.getUnit() <= currentCapacity;
+    private List<RouteLeg> returnToDepotAndRefill(Address from, Address depot) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance backToDepot = getTimeDistanceBetweenAddresses(from, depot);
+        routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(),
+                depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
+        return routeLegs;
     }
 
+    private List<RouteLeg> addLegFromDepotToNextAddress(Address depot, Address nextTo, Long units) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance fromDepot = getTimeDistanceBetweenAddresses(depot, nextTo);
+        routeLegs.add(new RouteLeg(depot.getId(), nextTo.getId(), depot.getLatitude(), depot.getLongitude(),
+                nextTo.getLatitude(), nextTo.getLongitude(), fromDepot.getTime(), fromDepot.getDistance(), units));
+        return routeLegs;
+    }
+
+    private void addFinalLegToDepot(List<Address> bestSolution, Address depot, List<RouteLeg> routeLegs) {
+        Address lastAddress = bestSolution.get(bestSolution.size() - 1);
+        if (!lastAddress.equals(depot)) {
+            TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
+            routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(),
+                    depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
+        }
+    }
 
     // Nearest Neighbor part
     // Nearest Neighbor part
@@ -282,7 +295,7 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         Address currentAddress = depot;
 
         while (!tempAddresses.isEmpty()) {
-            Address nextAddress = findFeasibleDestinationWithoutCapacity(currentAddress, tempAddresses);
+            Address nextAddress = findNearestDestinationWithoutCapacity(currentAddress, tempAddresses);
             if (nextAddress == null) {
                 // If no feasible next address found, it might indicate a logic error since capacity is not considered
                 throw new IllegalStateException("No feasible next address found without considering capacity.");
@@ -293,11 +306,6 @@ public class NearestNeighborSA implements RoutingAlgorithm {
             tempAddresses.remove(nextAddress);
             currentAddress = nextAddress;
         }
-
-        // Ensure the route ends with the depot
-        //if (!routeAddresses.get(routeAddresses.size() - 1).equals(depot)) {
-        //    routeAddresses.add(depot);
-        //}
 
         return routeAddresses;
     }
@@ -319,7 +327,7 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         Address currentAddress = depot;
 
         while (!tempAddresses.isEmpty()) {
-            Address nextAddress = findFeasibleDestinationWithoutCapacity(currentAddress, tempAddresses);
+            Address nextAddress = findNearestDestinationWithoutCapacity(currentAddress, tempAddresses);
             if (nextAddress == null) {
                 // If no feasible next address found, it might indicate a logic error since capacity is not considered
                 throw new IllegalStateException("No feasible next address found without considering capacity.");
@@ -331,11 +339,6 @@ public class NearestNeighborSA implements RoutingAlgorithm {
             currentAddress = nextAddress;
         }
 
-        // Ensure the route ends with the depot
-        //if (!routeAddresses.get(routeAddresses.size() - 1).equals(depot)) {
-        //    routeAddresses.add(depot);
-        //}
-
         // Print the routeAddresses before returning
         System.out.println("Generated Initial Solution for SA:");
         for (Address address : routeAddresses) {
@@ -345,7 +348,7 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         return routeAddresses;
     }
 
-    private Address findFeasibleDestinationWithoutCapacity(Address origin, List<Address> potentialDestinations) {
+    private Address findNearestDestinationWithoutCapacity(Address origin, List<Address> potentialDestinations) {
         Address optimalDestination = null;
         Double shortestTime = Double.MAX_VALUE;
         Double shortestDistance = Double.MAX_VALUE;

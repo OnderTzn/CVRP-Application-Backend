@@ -18,7 +18,6 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private double temperature = 10000;
     private double coolingRate = 0.0001;
-    private boolean allAddressesVisited = false;
     private int googleMapsRequestCount = 0;
 
     public SimulatedAnnealingAlgorithm(GoogleMapsServiceImp googleMapsService) {
@@ -26,17 +25,17 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     }
 
     @Override
-    public List<RouteLeg> calculateRouteWithDepot(Address depot, List<Address> addresses, long vehicleCapacity) {
+    public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
         List<Address> currentSolution = generateInitialSolution(addresses, depot);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
         System.out.println("Received addresses from SA:");
         for (Address address : addresses) {
-            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
+            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude() + "  Capacity: " + address.getUnit());
         }
 
         while (temperature > 1) {
-            System.out.println("TEMPERATURE: " + temperature);
+            //System.out.println("TEMPERATURE: " + temperature);
             List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
 
             // Adjust the solution for capacity constraints
@@ -52,14 +51,6 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
             if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
                 bestSolution = new ArrayList<>(currentSolution);
                 System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
-            }
-
-            // Check if all addresses are included in the current solution
-            if (!checkAllAddressesVisited(currentSolution, addresses)) {
-                // Consider additional logic or iterations to cover unvisited addresses
-            }
-            else {
-                allAddressesVisited = true;
             }
 
             temperature *= 1 - coolingRate;
@@ -82,16 +73,19 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
 
         Address depot = findDepot(addresses);
-        List<Address> currentSolution = generateInitialSolution(addresses, depot);
+        List<Address> addressesWithoutDepot = addresses.stream()
+                .filter(address -> !address.equals(depot))
+                .collect(Collectors.toList());
+        List<Address> currentSolution = generateInitialSolution(addressesWithoutDepot, depot);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
         System.out.println("Received addresses from SA:");
         for (Address address : addresses) {
-            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
+            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude() + "  Capacity: " + address.getUnit());
         }
 
         while (temperature > 1) {
-            System.out.println("TEMPERATURE: " + temperature);
+            //System.out.println("TEMPERATURE: " + temperature);
             List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
 
             // Adjust the solution for capacity constraints
@@ -109,14 +103,6 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
                 System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
             }
 
-            // Check if all addresses are included in the current solution
-            if (!checkAllAddressesVisited(currentSolution, addresses)) {
-                // Consider additional logic or iterations to cover unvisited addresses
-            }
-            else {
-                allAddressesVisited = true;
-            }
-
             temperature *= 1 - coolingRate;
         }
 
@@ -126,7 +112,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         System.out.println("Final Route:");
         for (RouteLeg leg : finalRouteLegs) {
             System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
-                    " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s");
+                    " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s, Capacity Used: " + leg.getVehicleCapacity() + " units");
         }
 
 
@@ -143,7 +129,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         initialSolution.add(depot);
 
         // Add the rest of the addresses in a shuffled order
-        List<Address> shuffledAddresses = new ArrayList<>(addresses.subList(1, addresses.size())); // Shuffles the list of addresses excluding the depot
+        List<Address> shuffledAddresses = new ArrayList<>(addresses); // Shuffles the list of addresses excluding the depot
         Collections.shuffle(shuffledAddresses);
         initialSolution.addAll(shuffledAddresses);
 
@@ -186,22 +172,6 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
     }
 
-    private void adjustForCapacity(List<Address> solution, Long vehicleCapacity) {
-        long currentCapacity = vehicleCapacity;
-        Address depot = findDepot(solution); // Find the depot once
-
-        for (int i = 1; i < solution.size(); i++) { // Skip depot at index 0
-            Address address = solution.get(i);
-            if (currentCapacity < address.getUnit()) {
-                // Insert the depot address to refill and reset the capacity
-                solution.add(i, depot);
-                currentCapacity = vehicleCapacity;
-            } else {
-                currentCapacity -= address.getUnit();
-            }
-        }
-    }
-
     private List<RouteLeg> convertToRouteLegs(List<Address> bestSolution, Address depot, Long vehicleCapacity) {
         List<RouteLeg> routeLegs = new ArrayList<>();
         Long currentCapacity = vehicleCapacity;
@@ -209,34 +179,44 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         for (int i = 0; i < bestSolution.size() - 1; i++) {
             Address from = bestSolution.get(i);
             Address to = bestSolution.get(i + 1);
+            Long remainingDemand = to.getUnit();  // Make a copy of the demand
 
-            // Check if the next address exceeds the current capacity
-            if (to.getUnit() > currentCapacity) {
-                // Add leg back to depot from 'from'
-                TimeDistance backToDepot = getTimeDistanceBetweenAddresses(from, depot);
-                routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(), depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance()));
-                // Reset capacity
-                currentCapacity = vehicleCapacity;
-                // Add leg from depot to 'to'
-                TimeDistance fromDepot = getTimeDistanceBetweenAddresses(depot, to);
-                routeLegs.add(new RouteLeg(depot.getId(), to.getId(), depot.getLatitude(), depot.getLongitude(), to.getLatitude(), to.getLongitude(), fromDepot.getTime(), fromDepot.getDistance()));
-            } else {
-                // Add leg from 'from' to 'to'
-                TimeDistance timeDistance = getTimeDistanceBetweenAddresses(from, to);
-                routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(), to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance()));
+            while (remainingDemand > 0) {
+                if (remainingDemand > currentCapacity) {
+                    // Deliver as much as possible with the current capacity
+                    routeLegs.addAll(deliverUnits(from, to, currentCapacity));
+                    remainingDemand -= currentCapacity;
+                    currentCapacity = vehicleCapacity;
+                    routeLegs.addAll(returnToDepotAndRefill(to, depot));
+                    from = depot;
+                } else {
+                    // Deliver the remaining units
+                    routeLegs.addAll(deliverUnits(from, to, remainingDemand));
+                    currentCapacity -= remainingDemand;
+                    remainingDemand = 0L;
+                }
             }
-            currentCapacity -= to.getUnit();
+
+            // If the current capacity is 0 after unloading, return to the depot to refill before proceeding
+            if (currentCapacity == 0) {
+                routeLegs.addAll(returnToDepotAndRefill(to, depot));
+                currentCapacity = vehicleCapacity;
+
+                // Add leg from depot to next address with the next address' demand
+                if (i < bestSolution.size() - 2) { // Check to avoid out-of-bounds error
+                    Address nextTo = bestSolution.get(i + 2);
+                    routeLegs.addAll(addLegFromDepotToNextAddress(depot, nextTo, nextTo.getUnit()));
+                    i++; // Skip the next address as it's already processed
+                }
+            }
         }
 
-        // Ensure the last leg returns to the depot if not already there
-        Address lastAddress = bestSolution.get(bestSolution.size() - 1);
-        if (!lastAddress.equals(depot)) {
-            TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
-            routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(), depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance()));
-        }
+        // Ensure the last leg returns to the depot
+        addFinalLegToDepot(bestSolution, depot, routeLegs);
 
         return routeLegs;
     }
+
 
     private TimeDistance getTimeDistanceBetweenAddresses(Address from, Address to) {
 
@@ -283,16 +263,37 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
                 .orElseThrow(() -> new IllegalStateException("Depot not found"));
     }
 
-
-    private boolean checkAllAddressesVisited(List<Address> currentSolution, List<Address> allAddresses) {
-        Set<Long> visitedAddressIds = currentSolution.stream().map(Address::getId).collect(Collectors.toSet());
-        return allAddresses.stream().allMatch(address -> visitedAddressIds.contains(address.getId()));
+    private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance timeDistance = getTimeDistanceBetweenAddresses(from, to);
+        routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(),
+                to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance(), units));
+        return routeLegs;
     }
 
+    private List<RouteLeg> returnToDepotAndRefill(Address from, Address depot) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance backToDepot = getTimeDistanceBetweenAddresses(from, depot);
+        routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(),
+                depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
+        return routeLegs;
+    }
 
+    private List<RouteLeg> addLegFromDepotToNextAddress(Address depot, Address nextTo, Long units) {
+        List<RouteLeg> routeLegs = new ArrayList<>();
+        TimeDistance fromDepot = getTimeDistanceBetweenAddresses(depot, nextTo);
+        routeLegs.add(new RouteLeg(depot.getId(), nextTo.getId(), depot.getLatitude(), depot.getLongitude(),
+                nextTo.getLatitude(), nextTo.getLongitude(), fromDepot.getTime(), fromDepot.getDistance(), units));
+        return routeLegs;
+    }
 
-    private boolean canVisitNextAddress(Address nextAddress, Long currentCapacity) {
-        return nextAddress.getUnit() <= currentCapacity;
+    private void addFinalLegToDepot(List<Address> bestSolution, Address depot, List<RouteLeg> routeLegs) {
+        Address lastAddress = bestSolution.get(bestSolution.size() - 1);
+        if (!lastAddress.equals(depot)) {
+            TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
+            routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(),
+                    depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
+        }
     }
 
 }

@@ -57,4 +57,17 @@ public class RouteLeg {
         this.vehicleCapacity = vehicleCapacity;
     }
 
+    public RouteLeg(Long originId, Long destinationId, Double originLatitude, Double originLongitude,
+                    Double destinationLatitude, Double destinationLongitude, Double time, Double distance, Long capacity) {
+        this.originId = originId;
+        this.destinationId = destinationId;
+        this.latitude = originLatitude;
+        this.longitude = originLongitude;
+        this.destLatitude = destinationLatitude;
+        this.destLongitude = destinationLongitude;
+        this.time = time;
+        this.distance = distance;
+        this.vehicleCapacity = capacity; // Set capacity
+    }
+
 }

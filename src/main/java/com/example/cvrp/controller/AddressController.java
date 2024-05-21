@@ -1,17 +1,12 @@
 package com.example.cvrp.controller;
 
-import com.example.cvrp.algorithms.RoutingAlgorithm;
-import com.example.cvrp.dto.AddressDTO;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
-import com.example.cvrp.model.GoogleMapsResponse;
-import com.example.cvrp.model.RouteRequest;
-import com.example.cvrp.repository.AddressRepository;
+import com.example.cvrp.dto.RouteRequest;
 import com.example.cvrp.service.AddressService;
 import com.example.cvrp.service.AddressServiceImp;
 import com.example.cvrp.service.DistanceServiceImp;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +20,6 @@ import java.util.List;
 public class AddressController {
 
     private final AddressServiceImp addressServiceImp;
-    private final AddressRepository addressRepository;
     private final DistanceServiceImp distanceService;
     private AddressService addressService;
 

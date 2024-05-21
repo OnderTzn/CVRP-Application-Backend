@@ -1,6 +1,5 @@
-package com.example.cvrp.model;
+package com.example.cvrp.dto;
 
-import com.example.cvrp.repository.AddressRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;

@@ -40,7 +40,7 @@ public class DistanceServiceImp {
     public List<RouteLeg> calculateRoute(String algorithm, Address depot, List<Address> addressList, Long vehicleCapacity) {
         RoutingAlgorithm selectedAlgorithm = routingAlgorithms.get(algorithm);
         if (selectedAlgorithm != null) {
-            return selectedAlgorithm.calculateRouteWithDepot(depot, addressList, vehicleCapacity);
+            return selectedAlgorithm.calculateRoute(depot, addressList, vehicleCapacity);
         } else {
             throw new IllegalArgumentException("NearestNeighbor algorithm is not available.");
         }

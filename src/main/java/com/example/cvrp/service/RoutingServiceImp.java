@@ -4,6 +4,7 @@ import com.example.cvrp.algorithms.*;
 import com.example.cvrp.dto.RouteCalculationResult;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
+import com.example.cvrp.model.AlgorithmResult;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -11,20 +12,37 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class DistanceServiceImp {
+public class RoutingServiceImp {
     private final GoogleMapsServiceImp googleMapsService;
     private final AddressService addressService;
+    private final DistanceMatrixServiceImp distanceMatrixService;
+    private final AlgorithmResultService algorithmResultService;
     private final Map<String, RoutingAlgorithm> routingAlgorithms;
+    private final Map<String, RoutingAlgorithm> testRoutingAlgorithms;
 
-    public DistanceServiceImp(GoogleMapsServiceImp googleMapsService, AddressService addressService) {
+    public RoutingServiceImp(GoogleMapsServiceImp googleMapsService, AddressService addressService, DistanceMatrixServiceImp distanceMatrixService, AlgorithmResultService algorithmResultService) {
         this.googleMapsService = googleMapsService;
         this.addressService = addressService;
+        this.distanceMatrixService = distanceMatrixService;
+        this.algorithmResultService = algorithmResultService;
 
         routingAlgorithms = new HashMap<>();
         routingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
         routingAlgorithms.put("Savings", new SavingsAlgorithm(googleMapsService));
         routingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
         routingAlgorithms.put("NearestNeighborSA", new NearestNeighborSA(googleMapsService));
+
+        // Initialize the test routing algorithms map
+        testRoutingAlgorithms = new HashMap<>();
+        testRoutingAlgorithms.put("NearestNeighborTest", new NearestNeighborAlgorithmTest(distanceMatrixService));
+        testRoutingAlgorithms.put("SavingsTest", new SavingsAlgorithmTest(distanceMatrixService));
+        testRoutingAlgorithms.put("SimulatedAnnealingTest", new SimulatedAnnealingAlgorithmTest(distanceMatrixService));
+        testRoutingAlgorithms.put("NearestNeighborSATest", new NearestNeighborSATest(distanceMatrixService));
+
+        testRoutingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
+        testRoutingAlgorithms.put("Savings", new SavingsAlgorithm(googleMapsService));
+        testRoutingAlgorithms.put("SimulatedAnnealing", new SimulatedAnnealingAlgorithm(googleMapsService));
+        testRoutingAlgorithms.put("NearestNeighborSA", new NearestNeighborSA(googleMapsService));
     }
 
     public List<RouteLeg> calculateOptimalRoute(String algorithmType, int addressLimit, Long vehicleCapacity) {
@@ -42,13 +60,13 @@ public class DistanceServiceImp {
         if (selectedAlgorithm != null) {
             return selectedAlgorithm.calculateRoute(depot, addressList, vehicleCapacity);
         } else {
-            throw new IllegalArgumentException("NearestNeighbor algorithm is not available.");
+            throw new IllegalArgumentException("Unknown routing algorithm: " + algorithm);
         }
     }
 
 
-    public RouteCalculationResult calculateRouteAndGetDetails(String algorithmType, int addressLimit, Long vehicleCapacity) {
-        RoutingAlgorithm selectedAlgorithm = routingAlgorithms.get(algorithmType);
+    public RouteCalculationResult calculateRouteTest(String algorithmType, int addressLimit, Long vehicleCapacity) {
+        RoutingAlgorithm selectedAlgorithm = testRoutingAlgorithms.get(algorithmType);
         if (selectedAlgorithm == null) {
             throw new IllegalArgumentException("Unknown routing algorithm: " + algorithmType);
         }
@@ -72,10 +90,31 @@ public class DistanceServiceImp {
                 .filter(leg -> leg.getDestinationId().equals(1L)) // Checks if the destination is the depot
                 .count() - 1; // Subtract 1 to exclude the final mandatory return
 
+        int googleMapsRequestCount = distanceMatrixService.getGoogleMapsRequestCount();
+        System.out.println("Number of Google Maps API requests in test classes: " + googleMapsRequestCount);
+
+        // Save the results
+        Double initialTemperature = null;
+        Double coolingRate = null;
+        if (selectedAlgorithm instanceof SimulatedAnnealingAlgorithm) {
+            initialTemperature = ((SimulatedAnnealingAlgorithmTest) selectedAlgorithm).getInitialTemperature();
+            coolingRate = ((SimulatedAnnealingAlgorithmTest) selectedAlgorithm).getCoolingRate();
+        } else if (selectedAlgorithm instanceof NearestNeighborSA) {
+            initialTemperature = ((NearestNeighborSATest) selectedAlgorithm).getInitialTemperature();
+            coolingRate = ((NearestNeighborSATest) selectedAlgorithm).getCoolingRate();
+        }
+
+        // Remove "Test" suffix from algorithmType if it exists
+        String cleanedAlgorithmType = algorithmType.replaceAll("Test$", "");
+
+        // Save the results
+        AlgorithmResult result = new AlgorithmResult(
+                cleanedAlgorithmType, addressLimit, vehicleCapacity, initialTemperature, coolingRate,
+                totalTime, totalDistance, executionTime, returnsToDepot
+        );
+        algorithmResultService.saveResult(result);
+
         // Return a new RouteCalculationResult with the calculated values
         return new RouteCalculationResult(route, executionTime, totalDistance, totalTime, returnsToDepot);
     }
-
-
 }
-

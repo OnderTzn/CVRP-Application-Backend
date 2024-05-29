@@ -15,7 +15,7 @@ public class RouteLeg {
     private Double distance;
     private Long vehicleCapacity;
 
-    public RouteLeg(Long destinationId, Double latitude, Double longitude, Double time, Double distance) {
+    public RouteLeg(Long destinationId, Double latitude, Double longitude, Double time, Double distance) {  //NO USAGE
         this.destinationId = destinationId;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -23,7 +23,7 @@ public class RouteLeg {
         this.distance = distance;
     }
 
-    public RouteLeg(Long id, double latitude, double longitude) {
+    public RouteLeg(Long id, double latitude, double longitude) {   //NO USAGE
         this.destinationId = id;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -40,7 +40,7 @@ public class RouteLeg {
         this.distance = distance;
     }
 
-    public RouteLeg(Long originId, Long destinationId, Double latitude, Double longitude, Double time, Double distance) {
+    public RouteLeg(Long originId, Long destinationId, Double latitude, Double longitude, Double time, Double distance) {   //NO USAGE
         this.originId = originId;
         this.destinationId = destinationId;
         this.latitude = latitude;
@@ -49,7 +49,7 @@ public class RouteLeg {
         this.distance = distance;
     }
 
-    public RouteLeg(Long originId, Long destinationId, Double distance, Double time, Long vehicleCapacity) {
+    public RouteLeg(Long originId, Long destinationId, Double distance, Double time, Long vehicleCapacity) { //NO USAGE
         this.originId = originId;
         this.destinationId = destinationId;
         this.distance = distance;

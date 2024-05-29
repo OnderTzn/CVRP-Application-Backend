@@ -8,25 +8,25 @@ import org.springframework.stereotype.Service;
 
 
 @Service
-public class RouteTestServiceImp {
+public class RoutingTestServiceImp {
 
-    private final DistanceServiceImp distanceServiceImp;
+    private final RoutingServiceImp routingServiceImp;
 
-    private static final Logger log = LoggerFactory.getLogger(RouteTestServiceImp.class);
+    private static final Logger log = LoggerFactory.getLogger(RoutingTestServiceImp.class);
 
     @Autowired
-    public RouteTestServiceImp(DistanceServiceImp distanceServiceImp) {
-        this.distanceServiceImp = distanceServiceImp;
+    public RoutingTestServiceImp(RoutingServiceImp routingServiceImp) {
+        this.routingServiceImp = routingServiceImp;
     }
 
     public void runTests() {
         log.info("Starting the test process...");
 
         // Define the specific combinations of addressCounts and capacities
-        int[] addressCounts = {4};
-        long[] capacities = {7L}; // Make sure the lengths of addressCounts and capacities are equal
+        int[] addressCounts = {40};
+        long[] capacities = {5000L}; // Make sure the lengths of addressCounts and capacities are equal
 
-        String[] algorithms = {"Savings"}; //NearestNeighbor   // Savings   // SimulatedAnnealing   //NearestNeighborSA   // AlgorithmName
+        String[] algorithms = {"NearestNeighborTest"}; //NearestNeighborTest   // SavingsTest   // SimulatedAnnealingTest   //NearestNeighborSATest   // AlgorithmName
 
         for (String algorithm : algorithms) {
             for (int i = 0; i < addressCounts.length; i++) { // Assumes capacities.length == addressCounts.length
@@ -39,7 +39,7 @@ public class RouteTestServiceImp {
 
                 // Assuming calculateOptimalRoute returns void or some result type you can handle
                 long startTime = System.currentTimeMillis();
-                RouteCalculationResult result = distanceServiceImp.calculateRouteAndGetDetails(algorithm, addressCount, capacity);
+                RouteCalculationResult result = routingServiceImp.calculateRouteTest(algorithm, addressCount, capacity);
                 long endTime = System.currentTimeMillis();
 
                 // End measuring memory usage

@@ -3,45 +3,24 @@ package com.example.cvrp.algorithms;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.Saving;
-import com.example.cvrp.model.GoogleMapsResponse;
 import com.example.cvrp.dto.TimeDistance;
-import com.example.cvrp.service.GoogleMapsServiceImp;
+import com.example.cvrp.service.DistanceMatrixServiceImp;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Comparator;
 
-public class SavingsAlgorithm implements RoutingAlgorithm {
+public class SavingsAlgorithmTest implements RoutingAlgorithm {
 
-    private final GoogleMapsServiceImp googleMapsService;
-    private int googleMapsRequestCount = 0; // Counter for Google Maps API requests
+    private final DistanceMatrixServiceImp distanceMatrixService;
 
-    public SavingsAlgorithm(GoogleMapsServiceImp googleMapsService) {
-        this.googleMapsService = googleMapsService;
+    public SavingsAlgorithmTest(DistanceMatrixServiceImp distanceMatrixService) {
+        this.distanceMatrixService = distanceMatrixService;
     }
 
     @Override
     public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
-        depot.setUnit(0L); // Ensure depot demand is 0
-
-        // Initialize individual routes from depot to each customer and back
-        List<List<Address>> routes = initializeRoutes(addresses, depot);
-
-        // Calculate savings for all pairs of addresses
-        PriorityQueue<Saving> savingsQueue = calculateSavings(addresses, depot);
-
-        // Merge routes based on savings
-        mergeRoutes(savingsQueue, routes);
-
-        // Convert the list of addresses in routes to RouteLegs
-        return convertToRouteLegs(routes, depot, vehicleCapacity);
-    }
-
-    public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        System.out.println("Savings Algorithm");
-        // Assume the first address is the depot
-        Address depot = addresses.get(0);
         depot.setUnit(0L); // Ensure depot demand is 0
 
         // Initialize individual routes from depot to each customer and back
@@ -55,6 +34,15 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
         // Convert the list of addresses in routes to RouteLegs
         return convertToRouteLegs(routes, depot, vehicleCapacity);
+    }
+
+    @Override
+    public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
+        System.out.println("ON THE TEST FUNCTION");
+        System.out.println("Savings TEST Algorithm");
+        Address depot = addresses.get(0);
+        depot.setUnit(0L); // Ensure depot demand is 0
+        return calculateRoute(depot, addresses, vehicleCapacity);
     }
 
     private List<List<Address>> initializeRoutes(List<Address> addresses, Address depot) {
@@ -81,9 +69,15 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
     }
 
     private double calculateSaving(Address depot, Address a, Address b) {
-        TimeDistance depotToA = getTravelTime(depot, a);
-        TimeDistance depotToB = getTravelTime(depot, b);
-        TimeDistance aToB = getTravelTime(a, b);
+        TimeDistance depotToA = distanceMatrixService.getDistanceAndTime(
+                depot.getLatitude() + "," + depot.getLongitude(),
+                a.getLatitude() + "," + a.getLongitude());
+        TimeDistance depotToB = distanceMatrixService.getDistanceAndTime(
+                depot.getLatitude() + "," + depot.getLongitude(),
+                b.getLatitude() + "," + b.getLongitude());
+        TimeDistance aToB = distanceMatrixService.getDistanceAndTime(
+                a.getLatitude() + "," + a.getLongitude(),
+                b.getLatitude() + "," + b.getLongitude());
 
         // Prioritize time savings
         return depotToA.getTime() + depotToB.getTime() - aToB.getTime();
@@ -144,19 +138,19 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         // Ensure the last leg returns to the depot
         addFinalLegToDepot(routes, depot, routeLegs);
 
-        System.out.println("Final Route:");
+        System.out.println("Final on test:");
         for (RouteLeg leg : routeLegs) {
             System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
                     " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s, Capacity Used: " + leg.getVehicleCapacity() + " units");
         }
-        System.out.println("\n\nGoogle Maps API requests count in Savings: " + googleMapsRequestCount);
-        googleMapsRequestCount = 0;
 
         return routeLegs;
     }
 
     private RouteLeg createRouteLegBetweenAddresses(Address from, Address to) {
-        TimeDistance timeDistance = getTravelTime(from, to);
+        TimeDistance timeDistance = distanceMatrixService.getDistanceAndTime(
+                from.getLatitude() + "," + from.getLongitude(),
+                to.getLatitude() + "," + to.getLongitude());
         return new RouteLeg(from.getId(), to.getId(),
                 from.getLatitude(), from.getLongitude(),
                 to.getLatitude(), to.getLongitude(),
@@ -165,7 +159,9 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
     private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        TimeDistance timeDistance = getTravelTime(from, to);
+        TimeDistance timeDistance = distanceMatrixService.getDistanceAndTime(
+                from.getLatitude() + "," + from.getLongitude(),
+                to.getLatitude() + "," + to.getLongitude());
         routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(),
                 to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance(), units));
         return routeLegs;
@@ -173,7 +169,9 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
     private List<RouteLeg> returnToDepotAndRefill(Address from, Address depot) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        TimeDistance backToDepot = getTravelTime(from, depot);
+        TimeDistance backToDepot = distanceMatrixService.getDistanceAndTime(
+                from.getLatitude() + "," + from.getLongitude(),
+                depot.getLatitude() + "," + depot.getLongitude());
         routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(),
                 depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
         return routeLegs;
@@ -181,7 +179,9 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
     private List<RouteLeg> addLegFromDepotToNextAddress(Address depot, Address nextTo, Long units) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        TimeDistance fromDepot = getTravelTime(depot, nextTo);
+        TimeDistance fromDepot = distanceMatrixService.getDistanceAndTime(
+                depot.getLatitude() + "," + depot.getLongitude(),
+                nextTo.getLatitude() + "," + nextTo.getLongitude());
         routeLegs.add(new RouteLeg(depot.getId(), nextTo.getId(), depot.getLatitude(), depot.getLongitude(),
                 nextTo.getLatitude(), nextTo.getLongitude(), fromDepot.getTime(), fromDepot.getDistance(), units));
         return routeLegs;
@@ -189,11 +189,11 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
     private void addFinalLegToDepot(List<List<Address>> routes, Address depot, List<RouteLeg> routeLegs) {
         List<Address> lastRoute = routes.get(routes.size() - 1);
-        //lastRoute consists the addresses. To create a leg to depot, we need to get the address before the depot. Hence, it's size() -2
         Address lastAddress = lastRoute.get(lastRoute.size() - 2);
-
         if (!lastAddress.equals(depot)) {
-            TimeDistance backToDepot = getTravelTime(lastAddress, depot);
+            TimeDistance backToDepot = distanceMatrixService.getDistanceAndTime(
+                    lastAddress.getLatitude() + "," + lastAddress.getLongitude(),
+                    depot.getLatitude() + "," + depot.getLongitude());
             routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(),
                     depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
         }
@@ -201,51 +201,28 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
 
     // Helper Methods
     private TimeDistance getTravelTime(Address from, Address to) {
-        // Fetch the travel time between origin and destination using Google Maps API
-        // through the googleMapsService and return the time.
-        googleMapsRequestCount++;
-        GoogleMapsResponse response = googleMapsService.getDistanceMatrix(
+        return distanceMatrixService.getDistanceAndTime(
                 from.getLatitude() + "," + from.getLongitude(),
-                to.getLatitude() + "," + to.getLongitude()
-        );
-
-        if (response == null || response.getRows().isEmpty() || response.getRows().get(0).getElements().isEmpty()) {
-            return new TimeDistance(Double.MAX_VALUE, Double.MAX_VALUE); // Handle error scenario
-        }
-
-        Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
-        Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
-
-        return new TimeDistance(time, distance);
+                to.getLatitude() + "," + to.getLongitude());
     }
 
-    // Search through all routes to find the one that contains the specified address
     private List<Address> findRouteContaining(List<List<Address>> routes, Address address) {
-        // Find and return the route containing the specified address
         for (List<Address> route : routes) {
             if (route.contains(address)) {
                 return route;
             }
         }
-        return null; // Return null if no route contains the address
+        return null;
     }
 
     private boolean canBeMerged(List<Address> route1, List<Address> route2) {
-        // Check if two routes can be merged based specific constraints
         return !route1.equals(route2);
     }
 
     private void mergeTwoRoutes(List<Address> route1, List<Address> route2, List<List<Address>> allRoutes) {
-        // Merge route2 into route1 and remove route2 from allRoutes
-        // Assuming the last address of route1 and the first address of route2 are the depot
-        route1.remove(route1.size() - 1); // Remove the last address (depot) from route1
-        route2.remove(0); // Remove the first address (depot) from route2
-
-        // Append route2 to route1
+        route1.remove(route1.size() - 1);
+        route2.remove(0);
         route1.addAll(route2);
-
-        // Remove the merged route2 from the list of all routes
         allRoutes.remove(route2);
     }
-
 }

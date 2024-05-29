@@ -2,22 +2,20 @@ package com.example.cvrp.algorithms;
 
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
-import com.example.cvrp.model.GoogleMapsResponse;
 import com.example.cvrp.dto.TimeDistance;
-import com.example.cvrp.service.GoogleMapsServiceImp;
+import com.example.cvrp.service.DistanceMatrixServiceImp;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class NearestNeighborAlgorithm implements RoutingAlgorithm {
+public class NearestNeighborAlgorithmTest implements RoutingAlgorithm {
 
-    private final GoogleMapsServiceImp googleMapsService;
-    private int googleMapsRequestCount = 0; // Counter for Google Maps API requests
+    private final DistanceMatrixServiceImp distanceMatrixService;
 
-    public NearestNeighborAlgorithm(GoogleMapsServiceImp googleMapsService) {
-        this.googleMapsService = googleMapsService;
+    public NearestNeighborAlgorithmTest(DistanceMatrixServiceImp distanceMatrixService) {
+        this.distanceMatrixService = distanceMatrixService;
     }
 
     @Override
@@ -25,7 +23,6 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
         if (addresses == null || addresses.isEmpty()) {
             return new ArrayList<>(); // Return an empty route list
         }
-
         depot.setUnit(0L); // Ensure depot demand is 0
 
         List<Address> tempAddresses = new ArrayList<>(addresses);
@@ -40,7 +37,8 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
 
     @Override
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-        System.out.println("Nearest Neighbor Algorithm");
+        System.out.println("ON THE TEST FUNCTION");
+        System.out.println("Nearest Neighbor TEST Algorithm");
         if (addresses == null || addresses.isEmpty()) {
             return new ArrayList<>(); // Return an empty route list
         }
@@ -65,6 +63,7 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
         route.add(depot); // Start from the depot
 
         while (!tempAddresses.isEmpty()) {
+            System.out.println("TempAddress size: " + tempAddresses.size());
             Address nextAddress = findNearestNeighbor(origin, tempAddresses);
             if (nextAddress != null) {
                 route.add(nextAddress);
@@ -83,10 +82,13 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
 
         for (Address destination : potentialDestinations) {
             if (!destination.equals(origin)) {
-                GoogleMapsResponse response = getGoogleMapsResponse(origin, destination);
-                if (response != null && response.getRows() != null && !response.getRows().isEmpty()) {
-                    Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
-                    Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
+                TimeDistance entry = distanceMatrixService.getDistanceAndTime(
+                        origin.getLatitude() + "," + origin.getLongitude(),
+                        destination.getLatitude() + "," + destination.getLongitude());
+
+                if (entry != null) {
+                    Double time = entry.getTime();
+                    Double distance = entry.getDistance();
 
                     if (time < shortestTime || (time.equals(shortestTime) && distance < shortestDistance)) {
                         shortestTime = time;
@@ -97,18 +99,6 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
             }
         }
         return nearestNeighbor;
-    }
-
-    private GoogleMapsResponse getGoogleMapsResponse(Address origin, Address destination) {
-        try {
-            String originParam = origin.getLatitude() + "," + origin.getLongitude();
-            String destinationParam = destination.getLatitude() + "," + destination.getLongitude();
-            googleMapsRequestCount++;
-            return googleMapsService.getDistanceMatrix(originParam, destinationParam);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     private List<RouteLeg> convertToRouteLegs(List<Address> initialRoute, Address depot, long vehicleCapacity) {
@@ -151,20 +141,20 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
         // Ensure the last leg returns to the depot
         addFinalLegToDepot(initialRoute, depot, routeLegs);
 
-        System.out.println("Final Route:");
+        System.out.println("Final Route on Test:");
         for (RouteLeg leg : routeLegs) {
             System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
                     " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s, Capacity Used: " + leg.getVehicleCapacity() + " units");
         }
-        System.out.println("\n\nGoogle Maps API requests count in Nearest Neighbor: " + googleMapsRequestCount);
-        googleMapsRequestCount = 0;
 
         return routeLegs;
     }
 
     private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        TimeDistance timeDistance = getTimeDistanceBetweenAddresses(from, to);
+        TimeDistance timeDistance = distanceMatrixService.getDistanceAndTime(
+                from.getLatitude() + "," + from.getLongitude(),
+                to.getLatitude() + "," + to.getLongitude());
         routeLegs.add(new RouteLeg(from.getId(), to.getId(), from.getLatitude(), from.getLongitude(),
                 to.getLatitude(), to.getLongitude(), timeDistance.getTime(), timeDistance.getDistance(), units));
         return routeLegs;
@@ -172,7 +162,9 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
 
     private List<RouteLeg> returnToDepotAndRefill(Address from, Address depot) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        TimeDistance backToDepot = getTimeDistanceBetweenAddresses(from, depot);
+        TimeDistance backToDepot = distanceMatrixService.getDistanceAndTime(
+                from.getLatitude() + "," + from.getLongitude(),
+                depot.getLatitude() + "," + depot.getLongitude());
         routeLegs.add(new RouteLeg(from.getId(), depot.getId(), from.getLatitude(), from.getLongitude(),
                 depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
         return routeLegs;
@@ -180,7 +172,9 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
 
     private List<RouteLeg> addLegFromDepotToNextAddress(Address depot, Address nextTo, Long units) {
         List<RouteLeg> routeLegs = new ArrayList<>();
-        TimeDistance fromDepot = getTimeDistanceBetweenAddresses(depot, nextTo);
+        TimeDistance fromDepot = distanceMatrixService.getDistanceAndTime(
+                depot.getLatitude() + "," + depot.getLongitude(),
+                nextTo.getLatitude() + "," + nextTo.getLongitude());
         routeLegs.add(new RouteLeg(depot.getId(), nextTo.getId(), depot.getLatitude(), depot.getLongitude(),
                 nextTo.getLatitude(), nextTo.getLongitude(), fromDepot.getTime(), fromDepot.getDistance(), units));
         return routeLegs;
@@ -189,21 +183,11 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
     private void addFinalLegToDepot(List<Address> initialRoute, Address depot, List<RouteLeg> routeLegs) {
         Address lastAddress = initialRoute.get(initialRoute.size() - 1);
         if (!lastAddress.equals(depot)) {
-            TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
+            TimeDistance backToDepot = distanceMatrixService.getDistanceAndTime(
+                    lastAddress.getLatitude() + "," + lastAddress.getLongitude(),
+                    depot.getLatitude() + "," + depot.getLongitude());
             routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(),
                     depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
         }
-    }
-
-    private TimeDistance getTimeDistanceBetweenAddresses(Address from, Address to) {
-        GoogleMapsResponse response = getGoogleMapsResponse(from, to);
-        if (response == null || response.getRows() == null || response.getRows().isEmpty()) {
-            return new TimeDistance(Double.MAX_VALUE, Double.MAX_VALUE); // Handle error
-        }
-
-        Double time = response.getRows().get(0).getElements().get(0).getDuration().getValue();
-        Double distance = response.getRows().get(0).getElements().get(0).getDistance().getValue();
-
-        return new TimeDistance(time, distance);
     }
 }

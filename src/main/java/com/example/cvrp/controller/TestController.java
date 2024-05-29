@@ -1,6 +1,6 @@
 package com.example.cvrp.controller;
 
-import com.example.cvrp.service.RouteTestServiceImp;
+import com.example.cvrp.service.RoutingTestServiceImp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/tests")
 public class TestController {
 
-    private final RouteTestServiceImp routeTestService;
+    private final RoutingTestServiceImp routeTestService;
 
     @Autowired
-    public TestController(RouteTestServiceImp routeTestService) {
+    public TestController(RoutingTestServiceImp routeTestService) {
         this.routeTestService = routeTestService;
     }
 

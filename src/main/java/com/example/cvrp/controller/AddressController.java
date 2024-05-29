@@ -5,7 +5,7 @@ import com.example.cvrp.model.Address;
 import com.example.cvrp.dto.RouteRequest;
 import com.example.cvrp.service.AddressService;
 import com.example.cvrp.service.AddressServiceImp;
-import com.example.cvrp.service.DistanceServiceImp;
+import com.example.cvrp.service.RoutingServiceImp;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,7 @@ import java.util.List;
 public class AddressController {
 
     private final AddressServiceImp addressServiceImp;
-    private final DistanceServiceImp distanceService;
+    private final RoutingServiceImp distanceService;
     private AddressService addressService;
 
     @GetMapping("/all")

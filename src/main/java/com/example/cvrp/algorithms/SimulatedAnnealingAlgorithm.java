@@ -3,7 +3,7 @@ package com.example.cvrp.algorithms;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.GoogleMapsResponse;
-import com.example.cvrp.model.TimeDistance;
+import com.example.cvrp.dto.TimeDistance;
 import com.example.cvrp.service.GoogleMapsServiceImp;
 
 import java.util.*;
@@ -17,7 +17,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private double temperature = 10000;
-    private double coolingRate = 0.0001;
+    private double coolingRate = 0.001;
     private int googleMapsRequestCount = 0;
 
     public SimulatedAnnealingAlgorithm(GoogleMapsServiceImp googleMapsService) {
@@ -26,6 +26,22 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
     @Override
     public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
+        int addressCount = addresses.size();
+        double coolingRate;
+        depot.setUnit(0L); // Ensure depot demand is 0
+
+        // Determine the cooling rate based on the address count
+        if (addressCount <= 15) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 40) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 100) {
+            coolingRate = 0.05;
+        } else {
+            coolingRate = 0.05;
+        }
+        this.coolingRate = coolingRate;
+
         List<Address> currentSolution = generateInitialSolution(addresses, depot);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
@@ -66,13 +82,30 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         }
 
 
-        System.out.println("\n\nGoogle Maps API requests count: " + googleMapsRequestCount);
+        System.out.println("\n\nGoogle Maps API requests count in SA: " + googleMapsRequestCount);
         return finalRouteLegs;
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
 
+        System.out.println("Simulated Annealing Algorithm");
+        int addressCount = addresses.size();
+        double coolingRate;
+
+        // Determine the cooling rate based on the address count
+        if (addressCount <= 15) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 40) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 100) {
+            coolingRate = 0.05;
+        } else {
+            coolingRate = 0.05;
+        }
+        this.coolingRate = coolingRate;
+
         Address depot = findDepot(addresses);
+        depot.setUnit(0L); // Ensure depot demand is 0
         List<Address> addressesWithoutDepot = addresses.stream()
                 .filter(address -> !address.equals(depot))
                 .collect(Collectors.toList());
@@ -116,7 +149,7 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         }
 
 
-        System.out.println("\n\nGoogle Maps API requests count: " + googleMapsRequestCount);
+        System.out.println("\n\nGoogle Maps API requests count in Simulated Annealing: " + googleMapsRequestCount);
         return finalRouteLegs;
     }
 

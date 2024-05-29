@@ -80,8 +80,8 @@ public class RoutingServiceImp {
         // Execute the routing algorithm
         List<RouteLeg> route = selectedAlgorithm.calculateRoute(addresses, vehicleCapacity);
 
-        // Measure execution time
-        long executionTime = System.currentTimeMillis() - startTime; // execution time in milliseconds
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime; // execution time in milliseconds
 
         // Calculate the total distance, total time, and returns to depot
         double totalDistance = route.stream().mapToDouble(RouteLeg::getDistance).sum();

@@ -16,8 +16,9 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
-    private double temperature = 10000;
-    private double coolingRate = 0.001;
+    private final double initialTemperature = 10000;
+    private double temperature = initialTemperature;
+    private double coolingRate = 0.01;
     private int googleMapsRequestCount = 0;
 
     public SimulatedAnnealingAlgorithm(GoogleMapsServiceImp googleMapsService) {
@@ -26,19 +27,20 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
     @Override
     public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
+        temperature = initialTemperature;
         int addressCount = addresses.size();
         double coolingRate;
         depot.setUnit(0L); // Ensure depot demand is 0
 
         // Determine the cooling rate based on the address count
-        if (addressCount <= 15) {
+        if (addressCount <= 16) {
+            coolingRate = 0.01;
+        } else if (addressCount <= 41) {
             coolingRate = 0.025;
-        } else if (addressCount <= 40) {
+        } else if (addressCount <= 101) {
             coolingRate = 0.025;
-        } else if (addressCount <= 100) {
-            coolingRate = 0.05;
         } else {
-            coolingRate = 0.05;
+            coolingRate = 0.025;
         }
         this.coolingRate = coolingRate;
 
@@ -87,20 +89,20 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
     }
 
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
-
+        temperature = initialTemperature;
         System.out.println("Simulated Annealing Algorithm");
         int addressCount = addresses.size();
         double coolingRate;
 
         // Determine the cooling rate based on the address count
-        if (addressCount <= 15) {
+        if (addressCount <= 16) {
+            coolingRate = 0.01;
+        } else if (addressCount <= 41) {
             coolingRate = 0.025;
-        } else if (addressCount <= 40) {
+        } else if (addressCount <= 101) {
             coolingRate = 0.025;
-        } else if (addressCount <= 100) {
-            coolingRate = 0.05;
         } else {
-            coolingRate = 0.05;
+            coolingRate = 0.025;
         }
         this.coolingRate = coolingRate;
 
@@ -327,6 +329,14 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
             routeLegs.add(new RouteLeg(lastAddress.getId(), depot.getId(), lastAddress.getLatitude(), lastAddress.getLongitude(),
                     depot.getLatitude(), depot.getLongitude(), backToDepot.getTime(), backToDepot.getDistance(), 0L));
         }
+    }
+
+    public double getInitialTemperature() {
+        return initialTemperature;
+    }
+
+    public double getCoolingRate() {
+        return coolingRate;
     }
 
 }

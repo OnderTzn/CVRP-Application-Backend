@@ -2,8 +2,12 @@ package com.example.cvrp.dto;
 
 import com.example.cvrp.model.Address;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
+@Getter
+@Setter
 public class RouteLeg {
     private Long originId;
     private Long destinationId;

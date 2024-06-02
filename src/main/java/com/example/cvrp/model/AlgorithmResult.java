@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -24,6 +26,10 @@ public class AlgorithmResult {
     private double totalDistance;
     private long executionTime;
     private int returnsToDepot;
+    private long memoryUsage;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "algorithmResult")
+    private List<RouteLegEntity> routeLegs;
 
     // Constructors, getters, and setters
 
@@ -31,7 +37,7 @@ public class AlgorithmResult {
 
     public AlgorithmResult(String algorithmType, int addressCount, Long vehicleCapacity, Double initialTemperature,
                            Double coolingRate, double totalTime, double totalDistance, long executionTime,
-                           int returnsToDepot) {
+                           long memoryUsage, int returnsToDepot) {
         this.algorithmType = algorithmType;
         this.addressCount = addressCount;
         this.vehicleCapacity = vehicleCapacity;
@@ -40,7 +46,15 @@ public class AlgorithmResult {
         this.totalTime = totalTime;
         this.totalDistance = totalDistance;
         this.executionTime = executionTime;
+        this.memoryUsage = memoryUsage;
         this.returnsToDepot = returnsToDepot;
+    }
+
+    public void setRouteLegs(List<RouteLegEntity> routeLegs) {
+        this.routeLegs = routeLegs;
+        for (RouteLegEntity routeLeg : routeLegs) {
+            routeLeg.setAlgorithmResult(this);
+        }
     }
 
 

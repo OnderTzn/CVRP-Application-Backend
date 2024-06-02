@@ -73,14 +73,14 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         PriorityQueue<Saving> savingsQueue = new PriorityQueue<>(Comparator.comparing(Saving::getSaving).reversed());
         for (int i = 1; i < addresses.size(); i++) {
             for (int j = i + 1; j < addresses.size(); j++) {
-                double saving = calculateSaving(depot, addresses.get(i), addresses.get(j));
+                double saving = calculateRouteSaving(depot, addresses.get(i), addresses.get(j));
                 savingsQueue.add(new Saving(addresses.get(i), addresses.get(j), saving));
             }
         }
         return savingsQueue;
     }
 
-    private double calculateSaving(Address depot, Address a, Address b) {
+    private double calculateRouteSaving(Address depot, Address a, Address b) {
         TimeDistance depotToA = getTravelTime(depot, a);
         TimeDistance depotToB = getTravelTime(depot, b);
         TimeDistance aToB = getTravelTime(a, b);

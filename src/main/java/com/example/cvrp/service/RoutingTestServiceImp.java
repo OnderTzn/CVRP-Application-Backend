@@ -1,6 +1,7 @@
 package com.example.cvrp.service;
 
 import com.example.cvrp.dto.RouteCalculationResult;
+import com.example.cvrp.util.MemoryUsageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,19 +24,22 @@ public class RoutingTestServiceImp {
         log.info("Starting the test process...");
 
         // Define the specific combinations of addressCounts and capacities
-        int[] addressCounts = {40};
-        long[] capacities = {5000L}; // Make sure the lengths of addressCounts and capacities are equal
+        int[] addressCounts = {15, 40, 100};
+        long[] capacities = {10L, 20L, 40L}; // Make sure the lengths of addressCounts and capacities are equal
 
-        String[] algorithms = {"NearestNeighborTest"}; //NearestNeighborTest   // SavingsTest   // SimulatedAnnealingTest   //NearestNeighborSATest   // AlgorithmName
+        String[] algorithms = {"NearestNeighborTest", "SavingsTest", "SimulatedAnnealingTest", "NearestNeighborSATest"}; // NearestNeighborTest   // SavingsTest   // SimulatedAnnealingTest   // NearestNeighborSATest   // AlgorithmName
 
         for (String algorithm : algorithms) {
             for (int i = 0; i < addressCounts.length; i++) { // Assumes capacities.length == addressCounts.length
                 int addressCount = addressCounts[i];
                 long capacity = capacities[i];
 
+                MemoryUsageUtil.forceGarbageCollection();
+                long memoryBefore = MemoryUsageUtil.getUsedMemory();
+
                 // Start measuring memory usage
-                Runtime runtime = Runtime.getRuntime();
-                long beforeUsedMem = runtime.totalMemory() - runtime.freeMemory();
+                //Runtime runtime = Runtime.getRuntime();
+                //long beforeUsedMem = runtime.totalMemory() - runtime.freeMemory();
 
                 // Assuming calculateOptimalRoute returns void or some result type you can handle
                 long startTime = System.currentTimeMillis();
@@ -43,15 +47,20 @@ public class RoutingTestServiceImp {
                 long endTime = System.currentTimeMillis();
 
                 // End measuring memory usage
-                long afterUsedMem = runtime.totalMemory() - runtime.freeMemory();
-                long actualMemUsed = afterUsedMem - beforeUsedMem; // Actual memory used in bytes
+                //long afterUsedMem = runtime.totalMemory() - runtime.freeMemory();
+                //long actualMemUsed = afterUsedMem - beforeUsedMem; // Actual memory used in bytes
+
+                MemoryUsageUtil.forceGarbageCollection();
+                long memoryAfter = MemoryUsageUtil.getUsedMemory();
+                long memoryUsed = memoryAfter - memoryBefore;
+                //System.out.println("Memory used TEST: " + memoryUsed + " bytes");
 
                 // Log the results
                 //log.info("Algorithm: {}, Addresses: {}, Capacity: {}, Execution Time: {}ms, Route Time: {} s, Route Distance: {} m, Returns to Depot: {}",
                 //        algorithm, addressCount, capacity, (endTime - startTime), String.format("%.2f", result.getTotalTime()), String.format("%.2f", result.getTotalDistance()), result.getReturnsToDepot());
 
-                log.info("Algorithm: {}, Addresses: {}, Capacity: {}, Execution Time: {}ms, Memory Usage: {} bytes, Route Time: {} s, Route Distance: {} m, Returns to Depot: {}",
-                        algorithm, addressCount, capacity, (endTime - startTime), actualMemUsed, String.format("%.2f", result.getTotalTime()), String.format("%.2f", result.getTotalDistance()), result.getReturnsToDepot());
+                log.info("Algorithm: {}, Addresses: {}, Capacity: {}, Route Time: {} s, Route Distance: {} m, Execution Time: {}ms, Returns to Depot: {}, Memory Usage: {} bytes",
+                        algorithm, addressCount, capacity, String.format("%.2f", result.getTotalTime()), String.format("%.2f", result.getTotalDistance()), (endTime - startTime), result.getReturnsToDepot(), memoryUsed);
 
             }
         }

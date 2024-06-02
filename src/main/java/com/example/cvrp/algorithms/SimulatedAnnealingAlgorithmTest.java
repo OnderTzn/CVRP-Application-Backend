@@ -12,7 +12,7 @@ public class SimulatedAnnealingAlgorithmTest implements RoutingAlgorithm {
     private final DistanceMatrixServiceImp distanceMatrixService;
     private final double initialTemperature = 10000;
     private double temperature = initialTemperature;
-    private double coolingRate = 0.1;
+    private double coolingRate = 0.01;
 
     public SimulatedAnnealingAlgorithmTest(DistanceMatrixServiceImp distanceMatrixService) {
         this.distanceMatrixService = distanceMatrixService;
@@ -21,6 +21,20 @@ public class SimulatedAnnealingAlgorithmTest implements RoutingAlgorithm {
     @Override
     public List<RouteLeg> calculateRoute(Address depot, List<Address> addresses, long vehicleCapacity) {
         temperature = initialTemperature;
+        int addressCount = addresses.size();
+        double coolingRate;
+
+        // Determine the cooling rate based on the address count
+        if (addressCount <= 16) {
+            coolingRate = 0.01;
+        } else if (addressCount <= 41) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 101) {
+            coolingRate = 0.025;
+        } else {
+            coolingRate = 0.025;
+        }
+        this.coolingRate = coolingRate;
         depot.setUnit(0L); // Ensure depot demand is 0
         List<Address> currentSolution = generateInitialSolution(addresses, depot);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
@@ -51,6 +65,21 @@ public class SimulatedAnnealingAlgorithmTest implements RoutingAlgorithm {
         System.out.println("ON THE TEST FUNCTION");
         System.out.println("Simulated Annealing TEST Algorithm");
         temperature = initialTemperature;
+        int addressCount = addresses.size();
+        double coolingRate;
+
+        // Determine the cooling rate based on the address count
+        if (addressCount <= 16) {
+            coolingRate = 0.01;
+        } else if (addressCount <= 41) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 101) {
+            coolingRate = 0.025;
+        } else {
+            coolingRate = 0.025;
+        }
+        this.coolingRate = coolingRate;
+
         Address depot = findDepot(addresses);
         depot.setUnit(0L); // Ensure depot demand is 0
         List<Address> addressesWithoutDepot = addresses.stream()

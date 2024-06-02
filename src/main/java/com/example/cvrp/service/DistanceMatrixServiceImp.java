@@ -28,7 +28,11 @@ public class DistanceMatrixServiceImp {
         if (existingEntry.isPresent()) {
             return TimeDistanceConverter.toDto(existingEntry.get());
         }
+        else {
+            throw new RuntimeException("Origin: " + origin + ", Destination: " + destination + " doesn't exist in database");
+        }
 
+        /*
         // Fetch from Google Maps API if not in database
         GoogleMapsResponse response = googleMapsService.getDistanceMatrix(origin, destination);
         googleMapsRequestCount++; // Increment the counter
@@ -44,7 +48,7 @@ public class DistanceMatrixServiceImp {
             return timeDistance;
         } else {
             throw new RuntimeException("Failed to get distance and time from Google Maps API");
-        }
+        }*/
     }
     //ADDED FOR TESTING
     public void fetchAndSaveAllTimeDistances(List<Address> addresses) {

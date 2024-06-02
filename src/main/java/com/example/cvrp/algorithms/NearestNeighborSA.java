@@ -12,8 +12,9 @@ public class NearestNeighborSA implements RoutingAlgorithm {
 
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
-    private double temperature = 10000;
-    private final double coolingRate = 0.0001;
+    private final double initialTemperature = 10000;
+    private double temperature = initialTemperature;
+    private double coolingRate = 0.01;
     private int googleMapsRequestCount = 0;
 
 
@@ -27,17 +28,25 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         if (!addresses.contains(depot)) {
             addresses.add(0, depot); // Add depot as the first address if it's not included
         }
+        temperature = initialTemperature;
+        int addressCount = addresses.size();
+        double coolingRate;
+
+        if (addressCount <= 16) {
+            coolingRate = 0.01;
+        } else if (addressCount <= 41) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 101) {
+            coolingRate = 0.025;
+        } else {
+            coolingRate = 0.025;
+        }
         depot.setUnit(0L); // Ensure depot demand is 0
 
         // Use Nearest Neighbor to get the initial route as addresses
         List<Address> currentSolution = generateInitialSolutionForSA(depot, addresses);
 
         List<Address> bestSolution = new ArrayList<>(currentSolution);
-
-        /*System.out.println("Received addresses from SA:");
-        for (Address address : addresses) {
-            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude());
-        }*/
 
         while (temperature > 1) {
             //System.out.println("TEMPERATURE: " + temperature);
@@ -75,6 +84,22 @@ public class NearestNeighborSA implements RoutingAlgorithm {
     @Override
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
         System.out.println("Nearest Neighbor SA Algorithm");
+        temperature = initialTemperature;
+        int addressCount = addresses.size();
+        double coolingRate;
+
+        // Determine the cooling rate based on the address count
+        if (addressCount <= 16) {
+            coolingRate = 0.01;
+        } else if (addressCount <= 41) {
+            coolingRate = 0.025;
+        } else if (addressCount <= 101) {
+            coolingRate = 0.025;
+        } else {
+            coolingRate = 0.025;
+        }
+        this.coolingRate = coolingRate;
+
         Address depot = findDepot(addresses);
         depot.setUnit(0L); // Ensure depot demand is 0
         List<Address> currentSolution = generateInitialSolutionForSA(addresses);
@@ -388,5 +413,12 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         }
     }
 
+    public double getInitialTemperature() {
+        return initialTemperature;
+    }
+
+    public double getCoolingRate() {
+        return coolingRate;
+    }
 
 }

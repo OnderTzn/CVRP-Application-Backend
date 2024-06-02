@@ -5,11 +5,15 @@ import com.example.cvrp.dto.RouteCalculationResult;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.AlgorithmResult;
+import com.example.cvrp.model.RouteLegEntity;
+import com.example.cvrp.util.MemoryUsageUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.stream.Collectors;
 
 @Service
 public class RoutingServiceImp {
@@ -58,7 +62,43 @@ public class RoutingServiceImp {
     public List<RouteLeg> calculateRoute(String algorithm, Address depot, List<Address> addressList, Long vehicleCapacity) {
         RoutingAlgorithm selectedAlgorithm = routingAlgorithms.get(algorithm);
         if (selectedAlgorithm != null) {
-            return selectedAlgorithm.calculateRoute(depot, addressList, vehicleCapacity);
+            List<RouteLeg> route = selectedAlgorithm.calculateRoute(depot, addressList, vehicleCapacity);
+
+            // Calculate the total distance, total time, and returns to depot
+            double totalDistance = route.stream().mapToDouble(RouteLeg::getDistance).sum();
+            double totalTime = route.stream().mapToDouble(RouteLeg::getTime).sum();
+            int returnsToDepot = (int) route.stream()
+                    .filter(leg -> leg.getDestinationId().equals(1L)) // Checks if the destination is the depot
+                    .count() - 1; // Subtract 1 to exclude the final mandatory return
+
+            // Save the results
+            Double initialTemperature = null;
+            Double coolingRate = null;
+            if (selectedAlgorithm instanceof SimulatedAnnealingAlgorithm) {
+                initialTemperature = ((SimulatedAnnealingAlgorithm) selectedAlgorithm).getInitialTemperature();
+                coolingRate = ((SimulatedAnnealingAlgorithm) selectedAlgorithm).getCoolingRate();
+            } else if (selectedAlgorithm instanceof NearestNeighborSA) {
+                initialTemperature = ((NearestNeighborSA) selectedAlgorithm).getInitialTemperature();
+                coolingRate = ((NearestNeighborSA) selectedAlgorithm).getCoolingRate();
+            }
+
+            AlgorithmResult result = new AlgorithmResult(
+                    algorithm, addressList.size(), vehicleCapacity, initialTemperature, coolingRate,
+                    totalTime, totalDistance, 0, 0, returnsToDepot
+            );
+
+            // Convert RouteLeg DTOs to RouteLegEntities
+            List<RouteLegEntity> routeLegEntities = route.stream()
+                    .map(leg -> new RouteLegEntity(
+                            leg.getOriginId(), leg.getDestinationId(), leg.getLatitude(),
+                            leg.getLongitude(), leg.getDestLatitude(), leg.getDestLongitude(),
+                            leg.getTime(), leg.getDistance(), leg.getVehicleCapacity()
+                    ))
+                    .collect(Collectors.toList());
+
+            algorithmResultService.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
+
+            return route;
         } else {
             throw new IllegalArgumentException("Unknown routing algorithm: " + algorithm);
         }
@@ -70,6 +110,8 @@ public class RoutingServiceImp {
         if (selectedAlgorithm == null) {
             throw new IllegalArgumentException("Unknown routing algorithm: " + algorithmType);
         }
+        MemoryUsageUtil.forceGarbageCollection();
+        long memoryBefore = MemoryUsageUtil.getUsedMemory();
 
         // Start measuring execution time
         long startTime = System.currentTimeMillis();
@@ -93,13 +135,18 @@ public class RoutingServiceImp {
         int googleMapsRequestCount = distanceMatrixService.getGoogleMapsRequestCount();
         System.out.println("Number of Google Maps API requests in test classes: " + googleMapsRequestCount);
 
+        MemoryUsageUtil.forceGarbageCollection();
+        long memoryAfter = MemoryUsageUtil.getUsedMemory();
+        long memoryUsed = memoryAfter - memoryBefore;
+
         // Save the results
         Double initialTemperature = null;
         Double coolingRate = null;
-        if (selectedAlgorithm instanceof SimulatedAnnealingAlgorithm) {
+        if (selectedAlgorithm instanceof SimulatedAnnealingAlgorithmTest) {
             initialTemperature = ((SimulatedAnnealingAlgorithmTest) selectedAlgorithm).getInitialTemperature();
             coolingRate = ((SimulatedAnnealingAlgorithmTest) selectedAlgorithm).getCoolingRate();
-        } else if (selectedAlgorithm instanceof NearestNeighborSA) {
+        }
+        else if (selectedAlgorithm instanceof NearestNeighborSATest) {
             initialTemperature = ((NearestNeighborSATest) selectedAlgorithm).getInitialTemperature();
             coolingRate = ((NearestNeighborSATest) selectedAlgorithm).getCoolingRate();
         }
@@ -110,9 +157,32 @@ public class RoutingServiceImp {
         // Save the results
         AlgorithmResult result = new AlgorithmResult(
                 cleanedAlgorithmType, addressLimit, vehicleCapacity, initialTemperature, coolingRate,
-                totalTime, totalDistance, executionTime, returnsToDepot
+                totalTime, totalDistance, executionTime, memoryUsed, returnsToDepot
         );
-        algorithmResultService.saveResult(result);
+
+        // Convert RouteLeg DTOs to RouteLegEntities
+        List<RouteLegEntity> routeLegEntities = route.stream()
+                .map(leg -> new RouteLegEntity(
+                        leg.getOriginId(), leg.getDestinationId(), leg.getLatitude(),
+                        leg.getLongitude(), leg.getDestLatitude(), leg.getDestLongitude(),
+                        leg.getTime(), leg.getDistance(), leg.getVehicleCapacity()
+                ))
+                .collect(Collectors.toList());
+
+        //algorithmResultService.saveResult(result); // For saving the results to the database
+        algorithmResultService.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
+
+        // Prompt the user for input
+        /*Scanner scanner = new Scanner(System.in);
+        System.out.println("Save results? Enter 1 to save result, 2 to save result and route legs, any other key to skip:");
+        int input = scanner.nextInt();
+
+        // Save based on user input
+        if (input == 1) {
+            algorithmResultService.saveResult(result); // For saving the results to the database
+        } else if (input == 2) {
+            algorithmResultService.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
+        }*/
 
         // Return a new RouteCalculationResult with the calculated values
         return new RouteCalculationResult(route, executionTime, totalDistance, totalTime, returnsToDepot);

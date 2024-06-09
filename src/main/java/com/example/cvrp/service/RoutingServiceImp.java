@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,15 +19,15 @@ public class RoutingServiceImp {
     private final GoogleMapsServiceImp googleMapsService;
     private final AddressService addressService;
     private final DistanceMatrixServiceImp distanceMatrixService;
-    private final AlgorithmResultService algorithmResultService;
+    private final AlgorithmResultServiceImp algorithmResultServiceImp;
     private final Map<String, RoutingAlgorithm> routingAlgorithms;
     private final Map<String, RoutingAlgorithm> testRoutingAlgorithms;
 
-    public RoutingServiceImp(GoogleMapsServiceImp googleMapsService, AddressService addressService, DistanceMatrixServiceImp distanceMatrixService, AlgorithmResultService algorithmResultService) {
+    public RoutingServiceImp(GoogleMapsServiceImp googleMapsService, AddressService addressService, DistanceMatrixServiceImp distanceMatrixService, AlgorithmResultServiceImp algorithmResultServiceImp) {
         this.googleMapsService = googleMapsService;
         this.addressService = addressService;
         this.distanceMatrixService = distanceMatrixService;
-        this.algorithmResultService = algorithmResultService;
+        this.algorithmResultServiceImp = algorithmResultServiceImp;
 
         routingAlgorithms = new HashMap<>();
         routingAlgorithms.put("NearestNeighbor", new NearestNeighborAlgorithm(googleMapsService));
@@ -96,7 +95,7 @@ public class RoutingServiceImp {
                     ))
                     .collect(Collectors.toList());
 
-            algorithmResultService.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
+            algorithmResultServiceImp.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
 
             return route;
         } else {
@@ -170,7 +169,7 @@ public class RoutingServiceImp {
                 .collect(Collectors.toList());
 
         //algorithmResultService.saveResult(result); // For saving the results to the database
-        algorithmResultService.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
+        algorithmResultServiceImp.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
 
         // Prompt the user for input
         /*Scanner scanner = new Scanner(System.in);

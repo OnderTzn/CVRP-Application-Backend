@@ -1,6 +1,7 @@
 package com.example.cvrp.model;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,6 +30,7 @@ public class AlgorithmResult {
     private long memoryUsage;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "algorithmResult")
+    @JsonManagedReference
     private List<RouteLegEntity> routeLegs;
 
     // Constructors, getters, and setters

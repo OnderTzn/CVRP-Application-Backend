@@ -1,5 +1,7 @@
 package com.example.cvrp.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,6 +44,7 @@ public class RouteLegEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "algorithm_result_id", nullable = false)
+    @JsonBackReference
     private AlgorithmResult algorithmResult;
 
     public RouteLegEntity(Long originId, Long destinationId, double originLatitude, double originLongitude,

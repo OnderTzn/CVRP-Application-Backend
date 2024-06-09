@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -55,6 +56,16 @@ public class AddressController {
     public ResponseEntity<?> deleteAddress(@PathVariable("addressId") Long addressId) {
         addressServiceImp.deleteAddress(addressId);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PostMapping("/upload-csv")
+    public ResponseEntity<String> uploadCsv(@RequestParam("file") MultipartFile file) {
+        try {
+            addressServiceImp.saveAddressesFromCsv(file);
+            return new ResponseEntity<>("CSV file uploaded successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Failed to upload CSV file", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 

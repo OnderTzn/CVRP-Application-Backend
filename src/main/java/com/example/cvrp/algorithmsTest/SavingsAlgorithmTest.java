@@ -1,5 +1,6 @@
-package com.example.cvrp.algorithms;
+package com.example.cvrp.algorithmsTest;
 
+import com.example.cvrp.algorithms.RoutingAlgorithm;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.model.Saving;

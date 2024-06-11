@@ -1,6 +1,10 @@
 package com.example.cvrp.service;
 
 import com.example.cvrp.algorithms.*;
+import com.example.cvrp.algorithmsTest.NearestNeighborAlgorithmTest;
+import com.example.cvrp.algorithmsTest.NearestNeighborSATest;
+import com.example.cvrp.algorithmsTest.SavingsAlgorithmTest;
+import com.example.cvrp.algorithmsTest.SimulatedAnnealingAlgorithmTest;
 import com.example.cvrp.dto.RouteCalculationResult;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;

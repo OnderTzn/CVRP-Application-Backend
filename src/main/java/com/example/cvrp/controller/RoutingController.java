@@ -38,7 +38,7 @@ public class RoutingController {
         addresses.forEach(address -> System.out.println("Fetched address ID: " + address.getId()));
 
         List<RouteLeg> routeLegs = routingServiceImp.calculateRoute(routeRequest.getAlgorithm(), depot, addresses, routeRequest.getCapacity());
-        System.out.println("Number of route legs calculated: " + routeLegs.size());
+        System.out.println("Number of route legs calculated: " + routeLegs.size() + "\n\n");
         return ResponseEntity.ok(routeLegs);
     }
 

@@ -25,11 +25,9 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
         if (addresses == null || addresses.isEmpty()) {
             return new ArrayList<>(); // Return an empty route list
         }
-
         depot.setUnit(0L); // Ensure depot demand is 0
 
         List<Address> tempAddresses = new ArrayList<>(addresses);
-        //tempAddresses.remove(depot);
 
         // Step 1: Create the initial route without considering capacity
         List<Address> initialRoute = createInitialRoute(depot, tempAddresses);
@@ -38,6 +36,7 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
         return convertToRouteLegs(initialRoute, depot, vehicleCapacity);
     }
 
+    // For testing purposes
     @Override
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
         System.out.println("Nearest Neighbor Algorithm");
@@ -156,7 +155,7 @@ public class NearestNeighborAlgorithm implements RoutingAlgorithm {
             System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
                     " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s, Capacity Used: " + leg.getVehicleCapacity() + " units");
         }
-        System.out.println("\n\nGoogle Maps API requests count in Nearest Neighbor: " + googleMapsRequestCount);
+        System.out.println("\nGoogle Maps API requests count in Nearest Neighbor: " + googleMapsRequestCount);
         googleMapsRequestCount = 0;
 
         return routeLegs;

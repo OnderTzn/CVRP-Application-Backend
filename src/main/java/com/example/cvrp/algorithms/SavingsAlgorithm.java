@@ -38,23 +38,11 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
         return convertToRouteLegs(routes, depot, vehicleCapacity);
     }
 
+    // Testing purposes
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
         System.out.println("Savings Algorithm");
-        // Assume the first address is the depot
         Address depot = addresses.get(0);
-        depot.setUnit(0L); // Ensure depot demand is 0
-
-        // Initialize individual routes from depot to each customer and back
-        List<List<Address>> routes = initializeRoutes(addresses, depot);
-
-        // Calculate savings for all pairs of customers
-        PriorityQueue<Saving> savingsQueue = calculateSavings(addresses, depot);
-
-        // Merge routes based on savings
-        mergeRoutes(savingsQueue, routes);
-
-        // Convert the list of addresses in routes to RouteLegs
-        return convertToRouteLegs(routes, depot, vehicleCapacity);
+        return calculateRoute(depot, addresses, vehicleCapacity);
     }
 
     private List<List<Address>> initializeRoutes(List<Address> addresses, Address depot) {
@@ -149,18 +137,10 @@ public class SavingsAlgorithm implements RoutingAlgorithm {
             System.out.println("From ID: " + leg.getOriginId() + " To ID: " + leg.getDestinationId() +
                     " - Distance: " + leg.getDistance() + "m, Time: " + leg.getTime() + "s, Capacity Used: " + leg.getVehicleCapacity() + " units");
         }
-        System.out.println("\n\nGoogle Maps API requests count in Savings: " + googleMapsRequestCount);
+        System.out.println("\nGoogle Maps API requests count in Savings: " + googleMapsRequestCount);
         googleMapsRequestCount = 0;
 
         return routeLegs;
-    }
-
-    private RouteLeg createRouteLegBetweenAddresses(Address from, Address to) {
-        TimeDistance timeDistance = getTravelTime(from, to);
-        return new RouteLeg(from.getId(), to.getId(),
-                from.getLatitude(), from.getLongitude(),
-                to.getLatitude(), to.getLongitude(),
-                timeDistance.getTime(), timeDistance.getDistance());
     }
 
     private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {

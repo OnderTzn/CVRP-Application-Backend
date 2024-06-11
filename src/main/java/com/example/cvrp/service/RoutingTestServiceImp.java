@@ -24,10 +24,10 @@ public class RoutingTestServiceImp {
         log.info("Starting the test process...");
 
         // Define the specific combinations of addressCounts and capacities
-        int[] addressCounts = {15, 40, 100};
-        long[] capacities = {10L, 20L, 40L}; // Make sure the lengths of addressCounts and capacities are equal
+        int[] addressCounts = {15};
+        long[] capacities = {20L}; // Make sure the lengths of addressCounts and capacities are equal
 
-        String[] algorithms = {"NearestNeighborTest", "SavingsTest", "SimulatedAnnealingTest", "NearestNeighborSATest"}; // NearestNeighborTest   // SavingsTest   // SimulatedAnnealingTest   // NearestNeighborSATest   // AlgorithmName
+        String[] algorithms = {"SimulatedAnnealingTest"}; // NearestNeighborTest   // SavingsTest   // SimulatedAnnealingTest   // NearestNeighborSATest   // AlgorithmName
 
         for (String algorithm : algorithms) {
             for (int i = 0; i < addressCounts.length; i++) { // Assumes capacities.length == addressCounts.length

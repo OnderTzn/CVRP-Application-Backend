@@ -285,6 +285,7 @@ public class NearestNeighborSATest implements RoutingAlgorithm {
         return routeAddresses;
     }
 
+    // Testing purposes
     public List<Address> generateInitialSolutionForSA(List<Address> addresses) {
         List<Address> routeAddresses = new ArrayList<>();
         Address depot = addresses.get(0);

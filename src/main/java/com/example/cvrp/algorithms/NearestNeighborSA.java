@@ -17,7 +17,6 @@ public class NearestNeighborSA implements RoutingAlgorithm {
     private double coolingRate = 0.01;
     private int googleMapsRequestCount = 0;
 
-
     public NearestNeighborSA(GoogleMapsServiceImp googleMapsService) {
         this.googleMapsService = googleMapsService;
     }
@@ -49,19 +48,18 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
         while (temperature > 1) {
-            //System.out.println("TEMPERATURE: " + temperature);
             List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
 
-            double currentEnergy = calculateObjectiveValue(currentSolution);
-            double neighborEnergy = calculateObjectiveValue(newSolution);
+            double currentEnergy = calculateObjectiveValue(currentSolution, depot);
+            double neighborEnergy = calculateObjectiveValue(newSolution, depot);
 
             if (acceptanceProbability(currentEnergy, neighborEnergy, temperature) > Math.random()) {
                 currentSolution = new ArrayList<>(newSolution);
             }
 
-            if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
+            if (calculateObjectiveValue(currentSolution, depot) < calculateObjectiveValue(bestSolution, depot)) {
                 bestSolution = new ArrayList<>(currentSolution);
-                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
+                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution, depot));
             }
 
             temperature *= 1 - coolingRate;
@@ -77,10 +75,11 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         }
 
 
-        System.out.println("\n\nGoogle Maps API requests count in Nearest Neighbor SA: " + googleMapsRequestCount);
+        System.out.println("\nGoogle Maps API requests count in Nearest Neighbor SA: " + googleMapsRequestCount);
         return finalRouteLegs;
     }
 
+    // Testing purposes
     @Override
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
         System.out.println("Nearest Neighbor SA Algorithm");
@@ -116,16 +115,16 @@ public class NearestNeighborSA implements RoutingAlgorithm {
 
             List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
 
-            double currentEnergy = calculateObjectiveValue(currentSolution);
-            double neighborEnergy = calculateObjectiveValue(newSolution);
+            double currentEnergy = calculateObjectiveValue(currentSolution, depot);
+            double neighborEnergy = calculateObjectiveValue(newSolution, depot);
 
             if (acceptanceProbability(currentEnergy, neighborEnergy, temperature) > Math.random()) {
                 currentSolution = new ArrayList<>(newSolution);
             }
 
-            if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
+            if (calculateObjectiveValue(currentSolution, depot) < calculateObjectiveValue(bestSolution, depot)) {
                 bestSolution = new ArrayList<>(currentSolution);
-                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
+                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution, depot));
             }
 
             temperature *= 1 - coolingRate;
@@ -148,25 +147,39 @@ public class NearestNeighborSA implements RoutingAlgorithm {
 
     private List<Address> generateNeighborSolution(List<Address> currentSolution, Long vehicleCapacity) {
         List<Address> neighborSolution = new ArrayList<>(currentSolution);
+        Random random = new Random();
+        int strategy = random.nextInt(3); // Randomly choose a strategy (0: Swap, 1: Reversal, 2: Insertion)
 
-        // Randomly select two indices to swap, ensuring that depot (index 0) is not selected
-        int index1 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
-        int index2 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+        switch (strategy) {
+            case 0: // Swap
+                int index1 = 1 + random.nextInt(neighborSolution.size() - 1);
+                int index2 = 1 + random.nextInt(neighborSolution.size() - 1);
+                while (index1 == index2) {
+                    index2 = 1 + random.nextInt(neighborSolution.size() - 1);
+                }
+                Collections.swap(neighborSolution, index1, index2);
+                break;
 
-        // Ensure two different indices are selected
-        while (index1 == index2) {
-            index2 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+            case 1: // Reversal
+                int start = 1 + random.nextInt(neighborSolution.size() - 2);
+                int end = start + random.nextInt(neighborSolution.size() - start);
+                Collections.reverse(neighborSolution.subList(start, end + 1));
+                break;
+
+            case 2: // Insertion
+                int removeIndex = 1 + random.nextInt(neighborSolution.size() - 1);
+                Address address = neighborSolution.remove(removeIndex);
+                int insertIndex = 1 + random.nextInt(neighborSolution.size() - 1);
+                neighborSolution.add(insertIndex, address);
+                break;
         }
-
-        // Swap the addresses at these indices
-        Collections.swap(neighborSolution, index1, index2);
 
         return neighborSolution;
     }
 
-    private double calculateObjectiveValue(List<Address> solution) {
+    private double calculateObjectiveValue(List<Address> solution, Address depot) {
         double totalTravelTime = 0.0;  // Total time in seconds
-        double totalDistance = 0.0;    // Total distance in meters
+        //double totalDistance = 0.0;    // Total distance in meters
 
         for (int i = 0; i < solution.size() - 1; i++) {
             // Fetch time and distance between consecutive addresses
@@ -174,6 +187,10 @@ public class NearestNeighborSA implements RoutingAlgorithm {
             totalTravelTime += timeDistance.getTime();     // Accumulate time in seconds
             //totalDistance += timeDistance.getDistance();   // Accumulate distance in meters
         }
+
+        Address lastAddress = solution.get(solution.size() - 1);
+        TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
+        totalTravelTime += backToDepot.getTime();
 
         return totalTravelTime;
 
@@ -337,6 +354,7 @@ public class NearestNeighborSA implements RoutingAlgorithm {
         return routeAddresses;
     }
 
+    // Testing purposes
     public List<Address> generateInitialSolutionForSA(List<Address> addresses) {
         List<Address> routeAddresses = new ArrayList<>();
         Address depot = addresses.get(0);

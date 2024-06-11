@@ -104,6 +104,7 @@ public class RoutingServiceImp {
     }
 
 
+    // TEST FUNCTIONS
     public RouteCalculationResult calculateRouteTest(String algorithmType, int addressLimit, Long vehicleCapacity) {
         RoutingAlgorithm selectedAlgorithm = testRoutingAlgorithms.get(algorithmType);
         if (selectedAlgorithm == null) {
@@ -170,18 +171,6 @@ public class RoutingServiceImp {
 
         //algorithmResultService.saveResult(result); // For saving the results to the database
         algorithmResultServiceImp.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
-
-        // Prompt the user for input
-        /*Scanner scanner = new Scanner(System.in);
-        System.out.println("Save results? Enter 1 to save result, 2 to save result and route legs, any other key to skip:");
-        int input = scanner.nextInt();
-
-        // Save based on user input
-        if (input == 1) {
-            algorithmResultService.saveResult(result); // For saving the results to the database
-        } else if (input == 2) {
-            algorithmResultService.saveResult(result, routeLegEntities); // For saving the results and route legs to the database
-        }*/
 
         // Return a new RouteCalculationResult with the calculated values
         return new RouteCalculationResult(route, executionTime, totalDistance, totalTime, returnsToDepot);

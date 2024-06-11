@@ -67,34 +67,4 @@ public class AddressController {
             return new ResponseEntity<>("Failed to upload CSV file", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-    @PostMapping("/calculate-route")
-    public ResponseEntity<?> calculateRoute(@RequestBody RouteRequest routeRequest) {
-        System.out.println("Algorithm Type: " + routeRequest.getAlgorithm());
-        System.out.println("Depot ID: " + routeRequest.getDepotId());
-        System.out.println("Address IDs: " + routeRequest.getAddressList());
-        System.out.println("Vehicle Capacity: " + routeRequest.getCapacity());
-
-        Address depot = addressService.findAddressById(routeRequest.getDepotId());
-        System.out.println("Depot found: " + depot);
-
-        List<Address> addresses = addressServiceImp.getAddressesByIds(routeRequest.getAddressList());
-        System.out.println("Number of addresses fetched: " + addresses.size());
-        addresses.forEach(address -> System.out.println("Fetched address ID: " + address.getId()));
-
-        List<RouteLeg> routeLegs = routingServiceImp.calculateRoute(routeRequest.getAlgorithm(), depot, addresses, routeRequest.getCapacity());
-        System.out.println("Number of route legs calculated: " + routeLegs.size());
-        return ResponseEntity.ok(routeLegs);
-    }
-
-    @GetMapping("/calculateRoute/{algorithmType}/{addressLimit}/{vehicleCapacity}")
-    public ResponseEntity<List<RouteLeg>> calculateRoute(
-            @PathVariable String algorithmType,
-            @PathVariable int addressLimit,
-            @PathVariable Long vehicleCapacity) {
-
-        List<RouteLeg> route = routingServiceImp.calculateOptimalRoute(algorithmType, addressLimit, vehicleCapacity);
-        return ResponseEntity.ok(route);
-    }
 }

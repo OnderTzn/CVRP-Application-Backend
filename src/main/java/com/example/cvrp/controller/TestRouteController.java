@@ -1,19 +1,17 @@
 package com.example.cvrp.controller;
 
-import com.example.cvrp.dto.RouteCalculationResult;
-import com.example.cvrp.dto.RouteRequest;
 import com.example.cvrp.service.AddressPreparationService;
 import com.example.cvrp.service.RoutingServiceImp;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
-public class RouteController {
+public class TestRouteController {
 
     private final AddressPreparationService addressPreparationService;
     private final RoutingServiceImp routingService;
 
-    public RouteController(AddressPreparationService addressPreparationService, RoutingServiceImp routingService) {
+    public TestRouteController(AddressPreparationService addressPreparationService, RoutingServiceImp routingService) {
         this.addressPreparationService = addressPreparationService;
         this.routingService = routingService;
     }

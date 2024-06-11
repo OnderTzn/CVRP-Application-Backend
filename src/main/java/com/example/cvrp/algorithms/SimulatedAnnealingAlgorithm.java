@@ -10,10 +10,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
-    // Define MAX_ATTEMPTS as a constant
-    //private static final int MAX_ATTEMPTS = 150;
-
-
     private final GoogleMapsServiceImp googleMapsService;
     private Map<String, TimeDistance> distanceCache = new HashMap<>();
     private final double initialTemperature = 10000;
@@ -47,28 +43,19 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         List<Address> currentSolution = generateInitialSolution(addresses, depot);
         List<Address> bestSolution = new ArrayList<>(currentSolution);
 
-        System.out.println("Received addresses from SA:");
-        for (Address address : addresses) {
-            System.out.println("ID: " + address.getId() + ", Latitude: " + address.getLatitude() + ", Longitude: " + address.getLongitude() + "  Capacity: " + address.getUnit());
-        }
-
         while (temperature > 1) {
-            //System.out.println("TEMPERATURE: " + temperature);
-            List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
+            List<Address> newSolution = generateNeighborSolution(currentSolution);
 
-            // Adjust the solution for capacity constraints
-            //adjustForCapacity(newSolution, vehicleCapacity);
-
-            double currentEnergy = calculateObjectiveValue(currentSolution);
-            double neighborEnergy = calculateObjectiveValue(newSolution);
+            double currentEnergy = calculateObjectiveValue(currentSolution, depot);
+            double neighborEnergy = calculateObjectiveValue(newSolution, depot);
 
             if (acceptanceProbability(currentEnergy, neighborEnergy, temperature) > Math.random()) {
                 currentSolution = new ArrayList<>(newSolution);
             }
 
-            if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
+            if (calculateObjectiveValue(currentSolution, depot) < calculateObjectiveValue(bestSolution, depot)) {
                 bestSolution = new ArrayList<>(currentSolution);
-                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
+                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution, depot));
             }
 
             temperature *= 1 - coolingRate;
@@ -84,10 +71,11 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         }
 
 
-        System.out.println("\n\nGoogle Maps API requests count in SA: " + googleMapsRequestCount);
+        System.out.println("\nGoogle Maps API requests count in SA: " + googleMapsRequestCount);
         return finalRouteLegs;
     }
 
+    // For testing purposes
     public List<RouteLeg> calculateRoute(List<Address> addresses, Long vehicleCapacity) {
         temperature = initialTemperature;
         System.out.println("Simulated Annealing Algorithm");
@@ -121,21 +109,21 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
 
         while (temperature > 1) {
             //System.out.println("TEMPERATURE: " + temperature);
-            List<Address> newSolution = generateNeighborSolution(currentSolution, vehicleCapacity);
+            List<Address> newSolution = generateNeighborSolution(currentSolution);
 
             // Adjust the solution for capacity constraints
             //adjustForCapacity(newSolution, vehicleCapacity);
 
-            double currentEnergy = calculateObjectiveValue(currentSolution);
-            double neighborEnergy = calculateObjectiveValue(newSolution);
+            double currentEnergy = calculateObjectiveValue(currentSolution, depot);
+            double neighborEnergy = calculateObjectiveValue(newSolution, depot);
 
             if (acceptanceProbability(currentEnergy, neighborEnergy, temperature) > Math.random()) {
                 currentSolution = new ArrayList<>(newSolution);
             }
 
-            if (calculateObjectiveValue(currentSolution) < calculateObjectiveValue(bestSolution)) {
+            if (calculateObjectiveValue(currentSolution, depot) < calculateObjectiveValue(bestSolution, depot)) {
                 bestSolution = new ArrayList<>(currentSolution);
-                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution));
+                System.out.println("New best solution found: " + calculateObjectiveValue(bestSolution, depot));
             }
 
             temperature *= 1 - coolingRate;
@@ -155,8 +143,6 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         return finalRouteLegs;
     }
 
-
-
     public List<Address> generateInitialSolution(List<Address> addresses, Address depot) {
 
         // Create a list for the initial solution with the depot as the first address
@@ -171,40 +157,52 @@ public class SimulatedAnnealingAlgorithm implements RoutingAlgorithm {
         return initialSolution;
     }
 
-    private List<Address> generateNeighborSolution(List<Address> currentSolution, Long vehicleCapacity) {
+    private List<Address> generateNeighborSolution(List<Address> currentSolution) {
         List<Address> neighborSolution = new ArrayList<>(currentSolution);
+        Random random = new Random();
+        int strategy = random.nextInt(3); // Randomly choose a strategy (0: Swap, 1: Reversal, 2: Insertion)
 
-        // Randomly select two indices to swap, ensuring that depot (index 0) is not selected
-        int index1 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
-        int index2 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+        switch (strategy) {
+            case 0: // Swap
+                int index1 = 1 + random.nextInt(neighborSolution.size() - 1);
+                int index2 = 1 + random.nextInt(neighborSolution.size() - 1);
+                while (index1 == index2) {
+                    index2 = 1 + random.nextInt(neighborSolution.size() - 1);
+                }
+                Collections.swap(neighborSolution, index1, index2);
+                break;
 
-        // Ensure two different indices are selected
-        while (index1 == index2) {
-            index2 = 1 + (int) (Math.random() * (neighborSolution.size() - 1));
+            case 1: // Reversal
+                int start = 1 + random.nextInt(neighborSolution.size() - 2);
+                int end = start + random.nextInt(neighborSolution.size() - start);
+                Collections.reverse(neighborSolution.subList(start, end + 1));
+                break;
+
+            case 2: // Insertion
+                int removeIndex = 1 + random.nextInt(neighborSolution.size() - 1);
+                Address address = neighborSolution.remove(removeIndex);
+                int insertIndex = 1 + random.nextInt(neighborSolution.size() - 1);
+                neighborSolution.add(insertIndex, address);
+                break;
         }
-
-        // Swap the addresses at these indices
-        Collections.swap(neighborSolution, index1, index2);
-
-        // Adjust for capacity if necessary
-        //adjustForCapacity(neighborSolution, vehicleCapacity);
 
         return neighborSolution;
     }
 
-    private double calculateObjectiveValue(List<Address> solution) {
+    private double calculateObjectiveValue(List<Address> solution, Address depot) {
         double totalTravelTime = 0.0;  // Total time in seconds
-        double totalDistance = 0.0;    // Total distance in meters
 
         for (int i = 0; i < solution.size() - 1; i++) {
             // Fetch time and distance between consecutive addresses
             TimeDistance timeDistance = getTimeDistanceBetweenAddresses(solution.get(i), solution.get(i + 1));
             totalTravelTime += timeDistance.getTime();     // Accumulate time in seconds
-            //totalDistance += timeDistance.getDistance();   // Accumulate distance in meters
         }
 
-        return totalTravelTime;
+        Address lastAddress = solution.get(solution.size() - 1);
+        TimeDistance backToDepot = getTimeDistanceBetweenAddresses(lastAddress, depot);
+        totalTravelTime += backToDepot.getTime();
 
+        return totalTravelTime;
     }
 
     private List<RouteLeg> convertToRouteLegs(List<Address> bestSolution, Address depot, Long vehicleCapacity) {

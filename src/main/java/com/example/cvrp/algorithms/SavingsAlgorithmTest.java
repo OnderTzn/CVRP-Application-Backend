@@ -147,16 +147,6 @@ public class SavingsAlgorithmTest implements RoutingAlgorithm {
         return routeLegs;
     }
 
-    private RouteLeg createRouteLegBetweenAddresses(Address from, Address to) {
-        TimeDistance timeDistance = distanceMatrixService.getDistanceAndTime(
-                from.getLatitude() + "," + from.getLongitude(),
-                to.getLatitude() + "," + to.getLongitude());
-        return new RouteLeg(from.getId(), to.getId(),
-                from.getLatitude(), from.getLongitude(),
-                to.getLatitude(), to.getLongitude(),
-                timeDistance.getTime(), timeDistance.getDistance());
-    }
-
     private List<RouteLeg> deliverUnits(Address from, Address to, Long units) {
         List<RouteLeg> routeLegs = new ArrayList<>();
         TimeDistance timeDistance = distanceMatrixService.getDistanceAndTime(

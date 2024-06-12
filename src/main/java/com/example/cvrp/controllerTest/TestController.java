@@ -1,6 +1,6 @@
-package com.example.cvrp.controller;
+package com.example.cvrp.controllerTest;
 
-import com.example.cvrp.service.RoutingTestServiceImp;
+import com.example.cvrp.serviceTest.RoutingTestServiceImp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

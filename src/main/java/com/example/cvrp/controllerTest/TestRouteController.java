@@ -1,6 +1,6 @@
-package com.example.cvrp.controller;
+package com.example.cvrp.controllerTest;
 
-import com.example.cvrp.service.AddressPreparationService;
+import com.example.cvrp.serviceTest.AddressPreparationService;
 import com.example.cvrp.service.RoutingServiceImp;
 import org.springframework.web.bind.annotation.*;
 

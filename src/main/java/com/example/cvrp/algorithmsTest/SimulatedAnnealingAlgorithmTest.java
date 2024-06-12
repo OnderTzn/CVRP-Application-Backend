@@ -4,7 +4,7 @@ import com.example.cvrp.algorithms.RoutingAlgorithm;
 import com.example.cvrp.dto.RouteLeg;
 import com.example.cvrp.model.Address;
 import com.example.cvrp.dto.TimeDistance;
-import com.example.cvrp.service.DistanceMatrixServiceImp;
+import com.example.cvrp.serviceTest.DistanceMatrixServiceImp;
 
 import java.util.*;
 import java.util.stream.Collectors;

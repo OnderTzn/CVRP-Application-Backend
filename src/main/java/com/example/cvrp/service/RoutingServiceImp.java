@@ -66,7 +66,14 @@ public class RoutingServiceImp {
     public List<RouteLeg> calculateRoute(String algorithm, Address depot, List<Address> addressList, Long vehicleCapacity) {
         RoutingAlgorithm selectedAlgorithm = routingAlgorithms.get(algorithm);
         if (selectedAlgorithm != null) {
+
+            // Start measuring execution time
+            long startTime = System.currentTimeMillis();
+
             List<RouteLeg> route = selectedAlgorithm.calculateRoute(depot, addressList, vehicleCapacity);
+
+            long endTime = System.currentTimeMillis();
+            long executionTime = endTime - startTime; // execution time in milliseconds
 
             // Calculate the total distance, total time, and returns to depot
             double totalDistance = route.stream().mapToDouble(RouteLeg::getDistance).sum();
@@ -88,7 +95,7 @@ public class RoutingServiceImp {
 
             AlgorithmResult result = new AlgorithmResult(
                     algorithm, addressList.size(), vehicleCapacity, initialTemperature, coolingRate,
-                    totalTime, totalDistance, 0, 0, returnsToDepot
+                    totalTime, totalDistance, executionTime, 0, returnsToDepot
             );
 
             // Convert RouteLeg DTOs to RouteLegEntities

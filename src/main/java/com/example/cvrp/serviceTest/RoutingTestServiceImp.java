@@ -26,7 +26,7 @@ public class RoutingTestServiceImp {
 
         // Define the specific combinations of addressCounts and capacities
         int[] addressCounts = {15};
-        long[] capacities = {20L}; // Make sure the lengths of addressCounts and capacities are equal
+        long[] capacities = {150L}; // Make sure the lengths of addressCounts and capacities are equal
 
         String[] algorithms = {"SimulatedAnnealingTest"}; // NearestNeighborTest   // SavingsTest   // SimulatedAnnealingTest   // NearestNeighborSATest   // AlgorithmName
 
